@@ -21,23 +21,61 @@
 #  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 #  THE SOFTWARE.
 
-PASSENGER_DIR = ENV['PASSENGER_DIR'] || abort("Please set the PASSENGER_DIR environment variable to the Passenger source directory")
-require("#{PASSENGER_DIR}/src/ruby_supportlib/phusion_passenger")
-PhusionPassenger.locate_directories
-PhusionPassenger.require_passenger_lib "constants"
-
 ROOT = File.expand_path(File.dirname(File.dirname(__FILE__)))
-require("#{ROOT}/lib/union_station_hooks")
-UnionStationHooks.require_lib "spec_helper"
+require("#{ROOT}/lib/union_station_hooks_core")
+UnionStationHooks.require_lib 'spec_helper'
+UnionStationHooks::SpecHelper.initialize!
 
-require "timecop"
+require 'timecop'
 
-DEBUG = !ENV['DEBUG'].to_s.empty?
-if DEBUG
-  UnionStationHooks.require_lib "log"
-  UnionStationHooks::Log.debugging = true
+module SpecHelper
+  def spawn_process(*args)
+    args.map! { |arg| arg.to_s }
+    if Process.respond_to?(:spawn)
+      Process.spawn(*args)
+    else
+      fork do
+        exec(*args)
+      end
+    end
+  end
+
+  def spawn_ust_router(tmpdir, socket_filename, password)
+    password_filename = "#{tmpdir}/password"
+    write_file(password_filename, password)
+    agent = PhusionPassenger.find_support_binary(PhusionPassenger::AGENT_EXE)
+    pid = spawn_process(agent,
+      'ust-router',
+      '--passenger-root', PhusionPassenger.install_spec,
+      '--log-level', debug? ? '6' : '2',
+      '--dev-mode',
+      '--dump-dir', tmpdir,
+      '--listen', "unix:#{socket_filename}",
+      '--password-file', password_filename)
+    eventually do
+      File.exist?(socket_filename)
+    end
+    pid
+  rescue Exception => e
+    if pid
+      Process.kill('KILL', pid)
+      Process.waitpid(pid)
+    end
+    raise e
+  end
+
+  def flush_ust_router(password, socket_address)
+    client = MessageClient.new('logging', password, socket_address)
+    begin
+      client.write('flush')
+      client.read
+    ensure
+      client.close
+    end
+  end
 end
 
 RSpec.configure do |config|
   config.include(UnionStationHooks::SpecHelper)
+  config.include(SpecHelper)
 end

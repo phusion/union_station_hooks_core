@@ -1,7 +1,7 @@
-#  Phusion Passenger - https://www.phusionpassenger.com/
-#  Copyright (c) 2010-2015 Phusion
+#  Union Station - https://www.unionstationapp.com/
+#  Copyright (c) 2010-2015 Phusion Holding B.V.
 #
-#  "Phusion Passenger" is a trademark of Hongli Lai & Ninh Bui.
+#  "Union Station" and "Passenger" are trademarks of Phusion Holding B.V.
 #
 #  Permission is hereby granted, free of charge, to any person obtaining a copy
 #  of this software and associated documentation files (the "Software"), to deal
@@ -36,7 +36,7 @@ module UnionStationHooks
     end
 
     def connected?
-      return !!@channel
+      !!@channel
     end
 
     def disconnect

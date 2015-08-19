@@ -29,23 +29,12 @@ UnionStationHooks.require_lib 'lock'
 UnionStationHooks.require_lib 'utils'
 
 module UnionStationHooks
-  class Core
+  class Context
     RETRY_SLEEP = 0.2
     NETWORK_ERRORS = [Errno::EPIPE, Errno::ECONNREFUSED, Errno::ECONNRESET,
       Errno::EHOSTUNREACH, Errno::ENETDOWN, Errno::ENETUNREACH, Errno::ETIMEDOUT]
 
     include Utils
-
-    def self.new_from_options(options)
-      if options["analytics"] && options["ust_router_address"]
-        new(options["ust_router_address"],
-          options["ust_router_username"],
-          options["ust_router_password"],
-          options["node_name"])
-      else
-        nil
-      end
-    end
 
     attr_accessor :max_connect_tries
     attr_accessor :reconnect_timeout
@@ -131,7 +120,7 @@ module UnionStationHooks
           begin
             @connection.channel.write("openTransaction",
               txn_id, group_name, "", category,
-              Core.timestamp_string,
+              Context.timestamp_string,
               union_station_key,
               true,
               true)
@@ -200,7 +189,7 @@ module UnionStationHooks
           begin
             @connection.channel.write("openTransaction",
               txn_id, group_name, "", category,
-              Core.timestamp_string,
+              Context.timestamp_string,
               union_station_key,
               true)
             return Transaction.new(@connection, txn_id)

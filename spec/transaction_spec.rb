@@ -25,28 +25,30 @@ require File.expand_path(File.dirname(__FILE__) + '/spec_helper')
 require 'stringio'
 require 'tmpdir'
 require 'fileutils'
-UnionStationHooks.require_lib 'core'
+UnionStationHooks.require_lib 'context'
 
 module UnionStationHooks
 
 describe Transaction do
   before :each do
-    @username  = "logging"
-    @password  = "1234"
-    @tmpdir    = Dir.mktmpdir
-    @core      = Core.new(@socket_address, @username, @password, "localhost")
+    @username = "logging"
+    @password = "1234"
+    @tmpdir   = Dir.mktmpdir
+    @socket_filename = "#{@tmpdir}/ust_router.socket"
+    @socket_address  = "unix:#{@socket_filename}"
+    @context = Context.new(@socket_address, @username, @password, "localhost")
   end
 
   after :each do
-    @core.close
+    @context.close
     kill_agent
     FileUtils.rm_rf(@tmpdir) if @tmpdir
     Timecop.return
+    UnionStationHooks::Log.warn_callback = nil
   end
 
   def start_agent
-    @agent_pid, @socket_filename, @socket_address = spawn_ust_router(
-      @tmpdir, @password, DEBUG)
+    @agent_pid = spawn_ust_router(@tmpdir, @socket_filename, @password)
   end
 
   def kill_agent
@@ -66,33 +68,40 @@ describe Transaction do
     File.read(dump_file_path(category))
   end
 
+  def silence_warnings
+    UnionStationHooks::Log.warn_callback = lambda { |message| }
+  end
+
   it "becomes null once it is closed" do
     start_agent
-    transaction = @core.new_transaction("foobar")
+    transaction = @context.new_transaction("foobar")
+    expect(transaction).not_to be_null
     transaction.close
-    transaction.should be_null
+    expect(transaction).to be_null
   end
 
   it "does nothing if it's null" do
     start_agent
-    logger = Core.new(nil, nil, nil, nil)
+    logger = Context.new(nil, nil, nil, nil)
     begin
       transaction = logger.new_transaction("foobar")
+      expect(transaction).to be_null
       transaction.message("hello")
       transaction.close(true)
     ensure
       logger.close
     end
 
-    File.exist?("#{@log_dir}/1").should be_false
+    expect(File.exist?(dump_file_path)).to be_falsey
   end
 
   describe "#begin_measure" do
     it "sends a BEGIN message" do
       start_agent
-      transaction = @core.new_transaction("foobar")
+      transaction = @context.new_transaction("foobar")
+      expect(transaction).not_to be_null
       begin
-        transaction.should_receive(:message).with(/^BEGIN: hello \(.+?,.+?,.+?\) $/)
+        expect(transaction).to receive(:message).with(/^BEGIN: hello \(.+?,.+?,.+?\) $/)
         transaction.begin_measure("hello")
       ensure
         transaction.close
@@ -101,9 +110,10 @@ describe Transaction do
 
     it "adds extra information as base64" do
       start_agent
-      transaction = @core.new_transaction("foobar")
+      transaction = @context.new_transaction("foobar")
+      expect(transaction).not_to be_null
       begin
-        transaction.should_receive(:message).with(/^BEGIN: hello \(.+?,.+?,.+?\) YWJjZA==$/)
+        expect(transaction).to receive(:message).with(/^BEGIN: hello \(.+?,.+?,.+?\) YWJjZA==$/)
         transaction.begin_measure("hello", "abcd")
       ensure
         transaction.close
@@ -114,9 +124,10 @@ describe Transaction do
   describe "#end_measure" do
     it "sends an END message if error_countered=false" do
       start_agent
-      transaction = @core.new_transaction("foobar")
+      transaction = @context.new_transaction("foobar")
+      expect(transaction).not_to be_null
       begin
-        transaction.should_receive(:message).with(/^END: hello \(.+?,.+?,.+?\)$/)
+        expect(transaction).to receive(:message).with(/^END: hello \(.+?,.+?,.+?\)$/)
         transaction.end_measure("hello")
       ensure
         transaction.close
@@ -125,9 +136,10 @@ describe Transaction do
 
     it "sends a FAIL message if error_countered=true" do
       start_agent
-      transaction = @core.new_transaction("foobar")
+      transaction = @context.new_transaction("foobar")
+      expect(transaction).not_to be_null
       begin
-        transaction.should_receive(:message).with(/^FAIL: hello \(.+?,.+?,.+?\)$/)
+        expect(transaction).to receive(:message).with(/^FAIL: hello \(.+?,.+?,.+?\)$/)
         transaction.end_measure("hello", true)
       ensure
         transaction.close

@@ -23,7 +23,7 @@
 
 module UnionStationHooks
   module Utils
-    extend self    # Make methods available as class methods.
+    extend self # Make methods available as class methods.
 
     def self.included(klass)
       # When included into another class, make sure that Utils
@@ -61,8 +61,8 @@ module UnionStationHooks
       when :unix
         return true
       when :tcp
-        host, port = address.sub(%r{^tcp://}, '').split(':', 2)
-        host == "127.0.0.1" || host == "::1" || host == "localhost"
+        host, _port = address.sub(%r{^tcp://}, '').split(':', 2)
+        host == '127.0.0.1' || host == '::1' || host == 'localhost'
       else
         raise ArgumentError, "Unknown socket address type for '#{address}'."
       end
@@ -73,8 +73,7 @@ module UnionStationHooks
         PhusionPassenger::NativeSupport.process_times
       end
     else
-      class ProcessTimes < Struct.new(:utime, :stime)
-      end
+      ProcessTimes = Struct.new(:utime, :stime)
 
       def process_times
         times = Process.times

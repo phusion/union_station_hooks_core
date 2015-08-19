@@ -48,22 +48,6 @@ describe MessageChannel do
       expect(@reader.read).to be_nil
     end
 
-    specify "#read_hash works" do
-      @writer.write("hello", "world")
-      expect(@reader.read_hash).to eq("hello" => "world")
-
-      @writer.write("hello", "world", "foo", "bar", "", "...")
-      expect(@reader.read_hash).to eq("hello" => "world", "foo" => "bar", "" => "...")
-    end
-
-    specify "#read_hash throws an exception if the array message doesn't have an even number of items" do
-      @writer.write("foo")
-      expect { @reader.read_hash }.to raise_error(MessageChannel::InvalidHashError)
-
-      @writer.write("foo", "bar", "baz")
-      expect { @reader.read_hash }.to raise_error(MessageChannel::InvalidHashError)
-    end
-
     it "can read a single written scalar message" do
       @writer.write_scalar("hello world")
       expect(@reader.read_scalar).to eq("hello world")

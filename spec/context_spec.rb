@@ -25,11 +25,11 @@ require File.expand_path(File.dirname(__FILE__) + '/spec_helper')
 require 'stringio'
 require 'tmpdir'
 require 'fileutils'
-UnionStationHooks.require_lib 'core'
+UnionStationHooks.require_lib 'context'
 
 module UnionStationHooks
 
-describe Core do
+describe Context do
   YESTERDAY = Time.utc(2010, 4, 11, 11, 56, 02)
   TODAY     = Time.utc(2010, 4, 11, 12, 56, 02)
   TOMORROW  = Time.utc(2010, 4, 11, 13, 56, 02)
@@ -40,13 +40,13 @@ describe Core do
     @tmpdir   = Dir.mktmpdir
     @socket_filename = "#{@tmpdir}/ust_router.socket"
     @socket_address  = "unix:#{@socket_filename}"
-    @core  = Core.new(@socket_address, @username, @password, "localhost")
-    @core2 = Core.new(@socket_address, @username, @password, "localhost")
+    @context  = Context.new(@socket_address, @username, @password, "localhost")
+    @context2 = Context.new(@socket_address, @username, @password, "localhost")
   end
 
   after :each do
-    @core.close
-    @core2.close
+    @context.close
+    @context2.close
     kill_agent
     FileUtils.rm_rf(@tmpdir) if @tmpdir
     Timecop.return
@@ -54,7 +54,7 @@ describe Core do
   end
 
   def start_agent
-    @agent_pid = spawn_ust_router(@tmpdir, @socket_filename, @password, DEBUG)
+    @agent_pid = spawn_ust_router(@tmpdir, @socket_filename, @password)
   end
 
   def kill_agent
@@ -83,7 +83,7 @@ describe Core do
       start_agent
       Timecop.freeze(TODAY)
 
-      transaction = @core.new_transaction("foobar")
+      transaction = @context.new_transaction("foobar")
       expect(transaction).not_to be_null
       begin
         transaction.message("hello")
@@ -93,7 +93,7 @@ describe Core do
 
       expect(read_dump_file).to match(/hello/)
 
-      transaction = @core.new_transaction("foobar", :processes)
+      transaction = @context.new_transaction("foobar", :processes)
       expect(transaction).not_to be_null
       begin
         transaction.message("world")
@@ -108,17 +108,17 @@ describe Core do
       start_agent
       Timecop.freeze(TODAY)
 
-      transaction = @core.new_transaction("foobar")
+      transaction = @context.new_transaction("foobar")
       expect(transaction).not_to be_null
       transaction.close(true)
 
-      connection = @core.instance_variable_get(:"@connection")
+      connection = @context.instance_variable_get(:"@connection")
       connection.synchronize do
         connection.channel.close
         connection.channel = nil
       end
 
-      transaction = @core.new_transaction("foobar")
+      transaction = @context.new_transaction("foobar")
       expect(transaction).not_to be_null
       begin
         transaction.message("hello")
@@ -130,19 +130,19 @@ describe Core do
     end
 
     it "does not reconnect to the UstRouter for a short period of time if connecting failed" do
-      @core.reconnect_timeout = 60
-      @core.max_connect_tries = 1
+      @context.reconnect_timeout = 60
+      @context.max_connect_tries = 1
 
       Timecop.freeze(TODAY)
       silence_warnings
-      expect(@core.new_transaction("foobar")).to be_null
+      expect(@context.new_transaction("foobar")).to be_null
 
       Timecop.freeze(TODAY + 30)
       start_agent
-      expect(@core.new_transaction("foobar")).to be_null
+      expect(@context.new_transaction("foobar")).to be_null
 
       Timecop.freeze(TODAY + 61)
-      expect(@core.new_transaction("foobar")).not_to be_null
+      expect(@context.new_transaction("foobar")).not_to be_null
     end
   end
 
@@ -151,10 +151,10 @@ describe Core do
       start_agent
       Timecop.freeze(TODAY)
 
-      transaction = @core.new_transaction("foobar", :processes)
+      transaction = @context.new_transaction("foobar", :processes)
       begin
         transaction.message("hello")
-        transaction2 = @core2.continue_transaction(transaction.txn_id, "foobar", :processes)
+        transaction2 = @context2.continue_transaction(transaction.txn_id, "foobar", :processes)
         expect(transaction2).not_to be_null
         expect(transaction2.txn_id).to eq(transaction.txn_id)
         begin
@@ -174,20 +174,20 @@ describe Core do
       start_agent
       Timecop.freeze(TODAY)
 
-      transaction = @core.new_transaction("foobar")
+      transaction = @context.new_transaction("foobar")
       expect(transaction).not_to be_null
       transaction.close(true)
-      transaction2 = @core2.continue_transaction(transaction.txn_id, "foobar")
+      transaction2 = @context2.continue_transaction(transaction.txn_id, "foobar")
       expect(transaction2).not_to be_null
       transaction2.close(true)
 
-      connection = @core2.instance_variable_get(:"@connection")
+      connection = @context2.instance_variable_get(:"@connection")
       connection.synchronize do
         connection.channel.close
         connection.channel = nil
       end
 
-      transaction2 = @core2.continue_transaction(transaction.txn_id, "foobar")
+      transaction2 = @context2.continue_transaction(transaction.txn_id, "foobar")
       expect(transaction2).not_to be_null
       begin
         transaction2.message("hello")
@@ -200,25 +200,25 @@ describe Core do
 
     it "does not reconnect to the UstRouter for a short period of time if connecting failed" do
       start_agent
-      @core.reconnect_timeout = 60
-      @core.max_connect_tries = 1
-      @core2.reconnect_timeout = 60
-      @core2.max_connect_tries = 1
+      @context.reconnect_timeout = 60
+      @context.max_connect_tries = 1
+      @context2.reconnect_timeout = 60
+      @context2.max_connect_tries = 1
 
       Timecop.freeze(TODAY)
-      transaction = @core.new_transaction("foobar")
+      transaction = @context.new_transaction("foobar")
       expect(transaction).not_to be_null
-      expect(@core2.continue_transaction(transaction.txn_id, "foobar")).not_to be_null
+      expect(@context2.continue_transaction(transaction.txn_id, "foobar")).not_to be_null
       kill_agent
       silence_warnings
-      expect(@core2.continue_transaction(transaction.txn_id, "foobar")).to be_null
+      expect(@context2.continue_transaction(transaction.txn_id, "foobar")).to be_null
 
       Timecop.freeze(TODAY + 30)
       start_agent
-      expect(@core2.continue_transaction(transaction.txn_id, "foobar")).to be_null
+      expect(@context2.continue_transaction(transaction.txn_id, "foobar")).to be_null
 
       Timecop.freeze(TODAY + 61)
-      expect(@core2.continue_transaction(transaction.txn_id, "foobar")).not_to be_null
+      expect(@context2.continue_transaction(transaction.txn_id, "foobar")).not_to be_null
     end
   end
 
@@ -226,22 +226,23 @@ describe Core do
     start_agent
     Timecop.freeze(TODAY)
 
-    transaction = @core.new_transaction("foobar")
+    transaction = @context.new_transaction("foobar")
     expect(transaction).not_to be_null
-    @core2.continue_transaction(transaction.txn_id, "foobar").close
+    @context2.continue_transaction(transaction.txn_id, "foobar").close
     kill_agent
+    silence_warnings
     start_agent
 
-    transaction = @core.new_transaction("foobar")
+    transaction = @context.new_transaction("foobar")
     expect(transaction).to be_null
-    transaction2 = @core2.continue_transaction("1234-abcd", "foobar")
+    transaction2 = @context2.continue_transaction("1234-abcd", "foobar")
     expect(transaction2).to be_null
 
     Timecop.freeze(TODAY + 60)
-    transaction = @core.new_transaction("foobar")
+    transaction = @context.new_transaction("foobar")
     expect(transaction).not_to be_null
     transaction.message("hello")
-    transaction2 = @core2.continue_transaction(transaction.txn_id, "foobar")
+    transaction2 = @context2.continue_transaction(transaction.txn_id, "foobar")
     expect(transaction2).not_to be_null
     begin
       transaction2.message("world")
@@ -255,7 +256,7 @@ describe Core do
   end
 
   it "only creates null Transaction objects if no server address is given" do
-    core = Core.new(nil, nil, nil, nil)
+    core = Context.new(nil, nil, nil, nil)
     begin
       expect(core.new_transaction("foobar")).to be_null
     ensure
@@ -267,12 +268,12 @@ describe Core do
     it "closes the connection" do
       start_agent
 
-      transaction = @core.new_transaction("foobar")
+      transaction = @context.new_transaction("foobar")
       expect(transaction).not_to be_null
       transaction.close
 
-      @core.clear_connection
-      connection = @core.instance_variable_get(:"@connection")
+      @context.clear_connection
+      connection = @context.instance_variable_get(:"@connection")
       connection.synchronize do
         expect(connection.channel).to be_nil
       end

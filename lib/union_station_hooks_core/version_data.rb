@@ -1,7 +1,7 @@
-#  Phusion Passenger - https://www.phusionpassenger.com/
-#  Copyright (c) 2015 Phusion
+#  Union Station - https://www.unionstationapp.com/
+#  Copyright (c) 2010-2015 Phusion Holding B.V.
 #
-#  "Phusion Passenger" is a trademark of Hongli Lai & Ninh Bui.
+#  "Union Station" and "Passenger" are trademarks of Phusion Holding B.V.
 #
 #  Permission is hereby granted, free of charge, to any person obtaining a copy
 #  of this software and associated documentation files (the "Software"), to deal
@@ -21,11 +21,24 @@
 #  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 #  THE SOFTWARE.
 
-module UnionStationHooks
-  ROOT = File.expand_path(File.dirname(__FILE__))
-  VERSION = "1.0.0"
+# This file contains union_station_hook_core's version number. It is meant
+# to be read and evaluated by the gemspec. We do not define any functions or
+# modules here because we need to support the following situation:
+#
+# 1. Passenger loads its vendored union_station_hooks_* gems. This defines
+#    various modules.
+# 2. The app specified union_station_hooks_* gems in its Gemfile, which
+#    indicates that it wants to override Passenger's vendored
+#    union_station_hooks_* gems with its own versions. This will cause Bundler
+#    to load union_station_hooks_*.gemspec.
+#
+# To make the gemspecs load properly and without affecting the already-loaded
+# union_station_hooks_* gems code, we must not define any functions or modules
+# here.
 
-  def self.require_lib(name)
-    require("#{ROOT}/union_station_hooks/#{name}")
-  end
-end
+{
+  :major  => 1,
+  :minor  => 0,
+  :tiny   => 0,
+  :string => '1.0.0'
+}

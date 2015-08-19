@@ -23,16 +23,15 @@
 #  THE SOFTWARE.
 
 module UnionStationHooks
-
   # This class allows reading and writing structured messages over
   # I/O channels. This is the Ruby implementation of Passenger's
   # src/cxx_supportlib/Utils/MessageIO.h; see that file for more information.
   class MessageChannel
-    HEADER_SIZE = 2                  # :nodoc:
-    DELIMITER = "\0"                 # :nodoc:
-    DELIMITER_NAME = "null byte"     # :nodoc:
-    UINT16_PACK_FORMAT = "n"         # :nodoc:
-    UINT32_PACK_FORMAT = "N"         # :nodoc:
+    HEADER_SIZE = 2
+    DELIMITER = "\0"
+    DELIMITER_NAME = 'null byte'
+    UINT16_PACK_FORMAT = 'n'
+    UINT32_PACK_FORMAT = 'N'
 
     class InvalidHashError < StandardError
     end
@@ -46,6 +45,9 @@ module UnionStationHooks
       # Make it binary just in case.
       @io.binmode if @io
     end
+
+    # rubocop:disable Metrics/MethodLength, Metrics/CyclomaticComplexity
+    # rubocop:disable Metrics/PerceivedComplexity, Metrics/AbcSize
 
     # Read an array message from the underlying file descriptor.
     # Returns the array message as an array, or nil when end-of-stream has
@@ -85,79 +87,16 @@ module UnionStationHooks
       delimiter_pos = buffer.index(DELIMITER, offset)
       while !delimiter_pos.nil?
         if delimiter_pos == 0
-          message << ""
+          message << ''
         else
-          message << buffer[offset .. delimiter_pos - 1]
+          message << buffer[offset..delimiter_pos - 1]
         end
         offset = delimiter_pos + 1
         delimiter_pos = buffer.index(DELIMITER, offset)
       end
-      return message
+      message
     rescue Errno::ECONNRESET
-      return nil
-    end
-
-    # Read an array message from the underlying file descriptor and return the
-    # result as a hash instead of an array. This assumes that the array message
-    # has an even number of elements.
-    # Returns nil when end-of-stream has been reached.
-    #
-    # Might raise SystemCallError, IOError or SocketError when something
-    # goes wrong.
-    def read_hash
-      buffer = new_buffer
-      if !@io.read(HEADER_SIZE, buffer)
-        return nil
-      end
-      while buffer.size < HEADER_SIZE
-        tmp = @io.read(HEADER_SIZE - buffer.size)
-        if tmp.empty?
-          return nil
-        else
-          buffer << tmp
-        end
-      end
-
-      chunk_size = buffer.unpack(UINT16_PACK_FORMAT)[0]
-      if !@io.read(chunk_size, buffer)
-        return nil
-      end
-      while buffer.size < chunk_size
-        tmp = @io.read(chunk_size - buffer.size)
-        if tmp.empty?
-          return nil
-        else
-          buffer << tmp
-        end
-      end
-
-      result = {}
-      offset = 0
-      delimiter_pos = buffer.index(DELIMITER, offset)
-      while !delimiter_pos.nil?
-        if delimiter_pos == 0
-          name = ""
-        else
-          name = buffer[offset .. delimiter_pos - 1]
-        end
-
-        offset = delimiter_pos + 1
-        delimiter_pos = buffer.index(DELIMITER, offset)
-        if delimiter_pos.nil?
-          raise InvalidHashError
-        elsif delimiter_pos == 0
-          value = ""
-        else
-          value = buffer[offset .. delimiter_pos - 1]
-        end
-
-        result[name] = value
-        offset = delimiter_pos + 1
-        delimiter_pos = buffer.index(DELIMITER, offset)
-      end
-      return result
-    rescue Errno::ECONNRESET
-      return nil
+      nil
     end
 
     # Read a scalar message from the underlying IO object. Returns the
@@ -190,34 +129,37 @@ module UnionStationHooks
       if size == 0
         buffer.replace('')
         return buffer
-      else
-        if !max_size.nil? && size > max_size
-          raise SecurityError, "Scalar message size (#{size}) " <<
-            "exceeds maximum allowed size (#{max_size})."
-        end
-        if !@io.read(size, buffer)
-          return nil
-        end
-        if buffer.size < size
-          tmp = ''
-          while buffer.size < size
-            if !@io.read(size - buffer.size, tmp)
-              return nil
-            else
-              buffer << tmp
-            end
+      end
+      if !max_size.nil? && size > max_size
+        raise SecurityError, "Scalar message size (#{size}) " \
+          "exceeds maximum allowed size (#{max_size})"
+      end
+      if !@io.read(size, buffer)
+        return nil
+      end
+
+      if buffer.size < size
+        tmp = ''
+        while buffer.size < size
+          if !@io.read(size - buffer.size, tmp)
+            return nil
+          else
+            buffer << tmp
           end
         end
-        return buffer
       end
+      buffer
     rescue Errno::ECONNRESET
-      return nil
+      nil
     end
 
-    # Send an array message, which consists of the given elements, over the underlying
-    # file descriptor. _name_ is the first element in the message, and _args_ are the
-    # other elements. These arguments will internally be converted to strings by calling
-    # to_s().
+    # rubocop:enable Metrics/MethodLength, Metrics/CyclomaticComplexity
+    # rubocop:enable Metrics/PerceivedComplexity, Metrics/AbcSize
+
+    # Send an array message, which consists of the given elements, over the
+    # underlying file descriptor. _name_ is the first element in the message,
+    # and _args_ are the other elements. These arguments will internally be
+    # converted to strings by calling to_s().
     #
     # Might raise SystemCallError, IOError or SocketError when something
     # goes wrong.
@@ -246,7 +188,7 @@ module UnionStationHooks
 
     # Return the file descriptor of the underlying IO object.
     def fileno
-      return @io.fileno
+      @io.fileno
     end
 
     # Close the underlying IO stream. Might raise SystemCallError or
@@ -257,25 +199,26 @@ module UnionStationHooks
 
     # Checks whether the underlying IO stream is closed.
     def closed?
-      return @io.closed?
+      @io.closed?
     end
 
   private
+
     def check_argument(arg)
       if arg.to_s.index(DELIMITER)
-        raise ArgumentError, "Message name and arguments may not contain #{DELIMITER_NAME}."
+        raise ArgumentError,
+          "Message name and arguments may not contain #{DELIMITER_NAME}"
       end
     end
 
     if defined?(ByteString)
       def new_buffer
-        return ByteString.new
+        ByteString.new
       end
     else
       def new_buffer
-        return ""
+        ''
       end
     end
   end
-
 end # module UnionStationHooks
