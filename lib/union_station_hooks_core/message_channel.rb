@@ -22,10 +22,13 @@
 #  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 #  THE SOFTWARE.
 
+
 module UnionStationHooks
   # This class allows reading and writing structured messages over
   # I/O channels. This is the Ruby implementation of Passenger's
   # src/cxx_supportlib/Utils/MessageIO.h; see that file for more information.
+  #
+  # @private
   class MessageChannel
     HEADER_SIZE = 2
     DELIMITER = "\0"

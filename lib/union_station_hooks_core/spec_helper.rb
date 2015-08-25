@@ -24,6 +24,10 @@
 require 'fileutils'
 
 module UnionStationHooks
+  # Contains helper methods for use in unit tests across all the
+  # `union_station_hooks_*` gems.
+  #
+  # @private
   module SpecHelper
     extend self # Make methods available as class methods.
 
@@ -35,12 +39,17 @@ module UnionStationHooks
       end
     end
 
+    # To be called during initialization of the test suite.
     def initialize!
       load_passenger
       initialize_debugging
       undo_bundler
     end
 
+    # Lookup the `passenger-config` command, either by respecting the
+    # `PASSENGER_CONFIG` environment variable, or by looking it up in `PATH`.
+    # If the command cannot be found, the current process aborts with an
+    # error message.
     def find_passenger_config
       passenger_config = ENV['PASSENGER_CONFIG']
       if passenger_config.nil? || passenger_config.empty?
@@ -61,6 +70,12 @@ module UnionStationHooks
       passenger_config
     end
 
+    # Uses `find_passenger_config` to lookup a Passenger installation, and
+    # loads the Passenger Ruby support library associated with that
+    # installation. All the constants defined in the Passenger Ruby support
+    # library are loaded. In addition, checks whether the Passenger agent
+    # executable is installed. If not, the current process aborts with an
+    # error message.
     def load_passenger
       passenger_config = find_passenger_config
       puts "Using Passenger installation at: #{passenger_config}"
@@ -97,10 +112,13 @@ module UnionStationHooks
       ENV.replace(clean_env)
     end
 
+    # Checks whether `initialize_debugging` enabled debugging mode.
     def debug?
       @@debug
     end
 
+    # Writes the given content to the file at the given path. If or or more
+    # parent directories don't exist, then they are created.
     def write_file(path, content)
       dir = File.dirname(path)
       if !File.exist?(dir)
@@ -111,10 +129,15 @@ module UnionStationHooks
       end
     end
 
+    # Base64-encodes the given data. Newlines are removed.
     def base64(data)
       [data].pack('m').gsub("\n", '')
     end
 
+    # Asserts that something should eventually happen. This is done by checking
+    # that the given block eventually returns true. The block is called
+    # once every `check_interval` msec. If the block does not return true
+    # within `deadline_duration` secs, then an exception is raised.
     def eventually(deadline_duration = 3, check_interval = 0.05)
       deadline = Time.now + deadline_duration
       while Time.now < deadline
@@ -127,6 +150,10 @@ module UnionStationHooks
       raise 'Time limit exceeded'
     end
 
+    # Asserts that something should never happen. This is done by checking that
+    # the given block never returns true. The block is called once every
+    # `check_interval` msec, until `deadline_duration` seconds have passed.
+    # If the block ever returns true, then an exception is raised.
     def should_never_happen(deadline_duration = 0.5, check_interval = 0.05)
       deadline = Time.now + deadline_duration
       while Time.now < deadline

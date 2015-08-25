@@ -25,6 +25,9 @@ require 'thread'
 UnionStationHooks.require_lib 'message_channel'
 
 module UnionStationHooks
+  # Represents a connection to the UstRouter process.
+  #
+  # @private
   class Connection
     attr_reader :mutex
     attr_accessor :channel

@@ -16,4 +16,7 @@ Gem::Specification.new do |s|
   ]
   s.homepage = "https://github.com/phusion/union_station_hooks_core"
   s.require_paths = ["lib"]
+
+  # DO NOT ADD ANY FURTHER DEPENDENCIES! See hacking/Vendoring.md,
+  # section "No dependencies", for more information.
 end

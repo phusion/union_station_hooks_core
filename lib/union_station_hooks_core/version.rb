@@ -21,6 +21,7 @@
 #  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 #  THE SOFTWARE.
 
+
 module UnionStationHooks
   version_file   = File.expand_path('version_data.rb', File.dirname(__FILE__))
   version_data   = eval(File.read(version_file))

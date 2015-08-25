@@ -10,6 +10,7 @@ GEM
     powerpack (0.1.1)
     rainbow (2.0.0)
     rake (10.4.2)
+    redcarpet (3.2.2)
     rspec (3.3.0)
       rspec-core (~> 3.3.0)
       rspec-expectations (~> 3.3.0)
@@ -31,15 +32,18 @@ GEM
       ruby-progressbar (~> 1.4)
     ruby-progressbar (1.7.5)
     timecop (0.5.3)
+    yard (0.8.7.6)
 
 PLATFORMS
   ruby
 
 DEPENDENCIES
   rake
+  redcarpet
   rspec
   rubocop
   timecop
+  yard
 
 BUNDLED WITH
    1.10.6

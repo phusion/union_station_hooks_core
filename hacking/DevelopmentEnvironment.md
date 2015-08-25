@@ -1,6 +1,4 @@
-# Contributors Guide
-
-## Setting up your development environment
+# Setting up your development environment
 
 Before you can start developing `union_station_hooks_core`, you must setup a development environment. Passenger is required.
 

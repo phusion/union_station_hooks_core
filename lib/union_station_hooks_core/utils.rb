@@ -21,7 +21,11 @@
 #  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 #  THE SOFTWARE.
 
+
 module UnionStationHooks
+  # Various utility methods.
+  #
+  # @private
   module Utils
     extend self # Make methods available as class methods.
 

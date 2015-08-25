@@ -29,6 +29,18 @@ UnionStationHooks.require_lib 'lock'
 UnionStationHooks.require_lib 'utils'
 
 module UnionStationHooks
+  # A Context object is the "heart" of all `union_station_hooks_*` gems. It
+  # contains a connection to the UstRouter (through a Connection object)
+  # and allows you to create Transaction objects.
+  #
+  # Context is a singleton. During initialization
+  # (`UnionStationHooks.initialize!`), an instance is created and stored in
+  # `UnionStationHooks.context`. All the public API methods make use of this
+  # singleton context.
+  #
+  # See hacking/Architecture.md for an overview.
+  #
+  # @private
   class Context
     RETRY_SLEEP = 0.2
     NETWORK_ERRORS = [Errno::EPIPE, Errno::ECONNREFUSED, Errno::ECONNRESET,

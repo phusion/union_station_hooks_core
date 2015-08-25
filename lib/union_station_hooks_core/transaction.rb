@@ -26,6 +26,7 @@ UnionStationHooks.require_lib 'context'
 UnionStationHooks.require_lib 'utils'
 
 module UnionStationHooks
+  # @private
   class Transaction
     attr_reader :txn_id
 

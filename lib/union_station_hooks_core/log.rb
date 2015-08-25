@@ -22,7 +22,9 @@
 #  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 #  THE SOFTWARE.
 
+
 module UnionStationHooks
+  # @private
   module Log
     @@debugging = false
     @@warn_callback = nil

@@ -21,7 +21,11 @@
 #  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 #  THE SOFTWARE.
 
+
 module UnionStationHooks
+  # A wrapper around a mutex, for use within Connection.
+  #
+  # @private
   class Lock
     def initialize(mutex)
       @mutex = mutex
