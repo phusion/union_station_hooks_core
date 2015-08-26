@@ -37,11 +37,25 @@ Style/ClassVars:
 Style/SymbolProc:
   Enabled: false
 
+Style/HashSyntax:
+  Enabled: false
+
+Style/EmptyLines:
+  Enabled: false
+
+Style/CommentIndentation:
+  Exclude:
+    - lib/union_station_hooks_core/request_reporter.rb
+
 Lint/RescueException:
   Enabled: false
 
 Lint/NestedMethodDefinition:
   Enabled: false
+
+Lint/Eval:
+  Exclude:
+    - lib/union_station_hooks_core/version.rb
 
 Metrics/MethodLength:
   Max: 25
@@ -51,3 +65,6 @@ Metrics/ModuleLength:
 
 Metrics/ClassLength:
   Max: 300
+
+Metrics/AbcSize:
+  Max: 20

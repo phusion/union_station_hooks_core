@@ -21,6 +21,8 @@
 #  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 #  THE SOFTWARE.
 
+UnionStationHooks.require_lib 'utils'
+UnionStationHooks.require_lib 'time_point'
 UnionStationHooks.require_lib 'request_reporter'
 
 module UnionStationHooks
@@ -66,7 +68,7 @@ module UnionStationHooks
       txn_id = rack_env['PASSENGER_TXN_ID']
       return nil if !txn_id
 
-      reporter = RequestReporter.new(context, txn_id)
+      reporter = RequestReporter.new(context, txn_id, app_group_name, key)
       return if reporter.null?
 
       rack_env['union_station_hooks'] = reporter
@@ -95,7 +97,8 @@ module UnionStationHooks
     # on which {begin_rack_request} was not called, so don't do that.
     #
     # This method does nothing if it was already called on this Rack request.
-    def end_rack_request(rack_env, uncaught_exception_raised_during_request = false)
+    def end_rack_request(rack_env,
+        uncaught_exception_raised_during_request = false)
       reporter = rack_env.delete('union_station_hooks')
       Thread.current[:union_station_hooks] = nil
       if reporter
@@ -106,6 +109,36 @@ module UnionStationHooks
           reporter.close
         end
       end
+    end
+
+    # Returns an opaque object (a {TimePoint}) that represents a collection
+    # of metrics about the current time.
+    #
+    # Various API methods expect you to provide timing information. They
+    # accept standard Ruby `Time` objects, but it is generally better to
+    # pass `TimePoint` objects. Unlike the standard Ruby `Time` object,
+    # which only contains the wall clock time (the real time), `TimePoint`
+    # may contain additional timing information such as CPU time, time
+    # spent in userspace and kernel space, time spent context switching,
+    # etc. The exact information contained in the object is operating
+    # system specific, hence why the object is meant to be opaque.
+    #
+    # See {RequestReporter#log_controller_action_happened} for an example of
+    # an API method which expects timing information.
+    # `RequestReporter#log_controller_action_happened` expects you to
+    # provide timing information about a controller action. That timing
+    # information is supposed to be obtained by calling
+    # `UnionStationHooks.now`.
+    #
+    # In all API methods that expect a `TimePoint`, you can also pass a
+    # normal Ruby `Time` object instead. But if you do that, the logged
+    # timing information will be less detailed. Only do this if you cannot
+    # obtain a `TimePoint` object for some reason.
+    #
+    # @return [TimePoint]
+    def now
+      pt = Utils.process_times
+      TimePoint.new(Time.now, pt.utime, pt.stime)
     end
 
   private

@@ -6,7 +6,7 @@
 
 If your application is a Rails application, then you should use the [union_station_hooks_rails](https://github.com/phusion/union_station_hooks_core) gem instead of this gem. `union_station_hooks_rails` automatically hooks into Rails to send the right information to Union Station, so that you don't have to call any APIs. Under the hood, `union_station_hooks_rails` makes use of the `union_station_hooks_core` API.
 
-**Resources:** [About Union Station](https://www.unionstationapp.com) | [Github](https://github.com/phusion/union_station_hooks_core) | [API docs](http://www.rubydoc.info/github/phusion/union_station_hooks_core/)
+**Resources:** [About Union Station](https://www.unionstationapp.com) | [Github](https://github.com/phusion/union_station_hooks_core) | [API docs](http://www.rubydoc.info/github/phusion/union_station_hooks_core/UnionStationHooks)
 
 **Table of contents**
 
@@ -100,7 +100,7 @@ It is currently not possible to use Union Station without Passenger. If you woul
 
 ## API
 
-Please refer to [the API documentation website](http://www.rubydoc.info/github/phusion/union_station_hooks_core/).
+Please refer to [the API documentation website](http://www.rubydoc.info/github/phusion/union_station_hooks_core/UnionStationHooks).
 
 <a name="legacy-code"></a>
 

@@ -177,7 +177,7 @@ module UnionStationHooks
     # supports application servers besides Passenger.
     def should_initialize?
       if defined?(PhusionPassenger)
-        PhusionPassenger::App.options["analytics"]
+        PhusionPassenger::App.options['analytics']
       else
         true
       end
@@ -273,7 +273,7 @@ module UnionStationHooks
         if defined?(::Rails)
           raise 'The Union Station hooks are not initialized. Please ensure ' \
             'that you have an initializer file ' \
-            '`config/initializers/union_station.rb` in which you call ' +
+            '`config/initializers/union_station.rb` in which you call ' \
             '`UnionStationHooks.initialize!`'
         else
           raise 'The Union Station hooks are not initialized. Please ensure ' \
@@ -281,6 +281,12 @@ module UnionStationHooks
             'application startup'
         end
       end
+    end
+
+    def now
+      # When `initialize!` is called, the definition in
+      # `api.rb` will override this implementation.
+      nil
     end
 
   private

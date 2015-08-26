@@ -42,6 +42,7 @@ module UnionStationHooks
     # To be called during initialization of the test suite.
     def initialize!
       load_passenger
+      initialize_ush_api
       initialize_debugging
       undo_bundler
     end
@@ -93,6 +94,10 @@ module UnionStationHooks
       end
     end
 
+    def initialize_ush_api
+      UnionStationHooks.require_lib('api')
+    end
+
     def initialize_debugging
       @@debug = !ENV['DEBUG'].to_s.empty?
       if @@debug
@@ -127,11 +132,6 @@ module UnionStationHooks
       File.open(path, 'wb') do |f|
         f.write(content)
       end
-    end
-
-    # Base64-encodes the given data. Newlines are removed.
-    def base64(data)
-      [data].pack('m').gsub("\n", '')
     end
 
     # Asserts that something should eventually happen. This is done by checking

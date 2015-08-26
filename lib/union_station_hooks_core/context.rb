@@ -132,7 +132,7 @@ module UnionStationHooks
           begin
             @connection.channel.write("openTransaction",
               txn_id, group_name, "", category,
-              Context.timestamp_string,
+              Utils.encoded_timestamp,
               union_station_key,
               true,
               true)
@@ -201,7 +201,7 @@ module UnionStationHooks
           begin
             @connection.channel.write("openTransaction",
               txn_id, group_name, "", category,
-              Context.timestamp_string,
+              Utils.encoded_timestamp,
               union_station_key,
               true)
             return Transaction.new(@connection, txn_id)
@@ -292,11 +292,6 @@ module UnionStationHooks
         token << RANDOM_CHARS[c % RANDOM_CHARS.size]
       end
       return token
-    end
-
-    def self.timestamp_string(time = Time.now)
-      timestamp = time.to_i * 1_000_000 + time.usec
-      return timestamp.to_s(36)
     end
   end
 end

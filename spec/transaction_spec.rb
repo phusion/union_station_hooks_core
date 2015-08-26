@@ -84,9 +84,9 @@ describe Transaction do
     start_agent
     logger = Context.new(nil, nil, nil, nil)
     begin
-      transaction = logger.new_transaction("foobar")
+      transaction = logger.new_transaction('foobar')
       expect(transaction).to be_null
-      transaction.message("hello")
+      transaction.message('hello')
       transaction.close(true)
     ensure
       logger.close
@@ -95,54 +95,90 @@ describe Transaction do
     expect(File.exist?(dump_file_path)).to be_falsey
   end
 
-  describe "#begin_measure" do
-    it "sends a BEGIN message" do
+  describe '#log_activity_begin' do
+    before :each do
       start_agent
-      transaction = @context.new_transaction("foobar")
-      expect(transaction).not_to be_null
-      begin
-        expect(transaction).to receive(:message).with(/^BEGIN: hello \(.+?,.+?,.+?\) $/)
-        transaction.begin_measure("hello")
-      ensure
-        transaction.close
-      end
+      @transaction = @context.new_transaction('foobar')
+      expect(@transaction).not_to be_null
     end
 
-    it "adds extra information as base64" do
-      start_agent
-      transaction = @context.new_transaction("foobar")
-      expect(transaction).not_to be_null
-      begin
-        expect(transaction).to receive(:message).with(/^BEGIN: hello \(.+?,.+?,.+?\) YWJjZA==$/)
-        transaction.begin_measure("hello", "abcd")
-      ensure
-        transaction.close
-      end
+    after :each do
+      @transaction.close
+    end
+
+    it 'logs a BEGIN message' do
+      expect(@transaction).to receive(:message).with(
+        /^BEGIN: hello \(.+?\) $/)
+      @transaction.log_activity_begin('hello')
+    end
+
+    it 'adds extra information as base64' do
+      expect(@transaction).to receive(:message).with(
+        /^BEGIN: hello \(.+?\) YWJjZA==$/)
+      @transaction.log_activity_begin('hello', UnionStationHooks.now, 'abcd')
+    end
+
+    it 'accepts a TimePoint as time' do
+      expect(@transaction).to receive(:message).with(
+        /^BEGIN: hello \([a-z0-9]+,[a-z0-9]+,[a-z0-9]+\) $/)
+      @transaction.log_activity_begin('hello', UnionStationHooks.now)
+    end
+
+    it 'accepts a Time as time, but outputs less detailed information' do
+      expect(@transaction).to receive(:message).with(
+        /^BEGIN: hello \([a-z0-9]+\) $/)
+      @transaction.log_activity_begin('hello', Time.now)
     end
   end
 
-  describe "#end_measure" do
-    it "sends an END message if error_countered=false" do
+  describe '#log_activity_end' do
+    before :each do
       start_agent
-      transaction = @context.new_transaction("foobar")
-      expect(transaction).not_to be_null
-      begin
-        expect(transaction).to receive(:message).with(/^END: hello \(.+?,.+?,.+?\)$/)
-        transaction.end_measure("hello")
-      ensure
-        transaction.close
+      @transaction = @context.new_transaction('foobar')
+      expect(@transaction).not_to be_null
+    end
+
+    after :each do
+      @transaction.close
+    end
+
+    context 'if has_error=false' do
+      it 'logs an END message' do
+        expect(@transaction).to receive(:message).with(
+          /^END: hello \(.+?\)$/)
+        @transaction.log_activity_end('hello')
+      end
+
+      it 'accepts a TimePoint as time' do
+        expect(@transaction).to receive(:message).with(
+          /^END: hello \([a-z0-9]+,[a-z0-9]+,[a-z0-9]+\)$/)
+        @transaction.log_activity_end('hello', UnionStationHooks.now)
+      end
+
+      it 'accepts a Time as time, but outputs less detailed information' do
+        expect(@transaction).to receive(:message).with(
+          /^END: hello \([a-z0-9]+\)$/)
+        @transaction.log_activity_end('hello', Time.now)
       end
     end
 
-    it "sends a FAIL message if error_countered=true" do
-      start_agent
-      transaction = @context.new_transaction("foobar")
-      expect(transaction).not_to be_null
-      begin
-        expect(transaction).to receive(:message).with(/^FAIL: hello \(.+?,.+?,.+?\)$/)
-        transaction.end_measure("hello", true)
-      ensure
-        transaction.close
+    context 'if has_error=true' do
+      it 'logs a FAIL message' do
+        expect(@transaction).to receive(:message).with(
+          /^FAIL: hello \(.+?\)$/)
+        @transaction.log_activity_end('hello', UnionStationHooks.now, true)
+      end
+
+      it 'accepts a TimePoint as time' do
+        expect(@transaction).to receive(:message).with(
+          /^FAIL: hello \([a-z0-9]+,[a-z0-9]+,[a-z0-9]+\)$/)
+        @transaction.log_activity_end('hello', UnionStationHooks.now, true)
+      end
+
+      it 'accepts a Time as time, but outputs less detailed information' do
+        expect(@transaction).to receive(:message).with(
+          /^FAIL: hello \([a-z0-9]+\)$/)
+        @transaction.log_activity_end('hello', Time.now, true)
       end
     end
   end

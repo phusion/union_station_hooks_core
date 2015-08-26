@@ -21,6 +21,7 @@
 #  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 #  THE SOFTWARE.
 
+require 'base64'
 
 module UnionStationHooks
   # Various utility methods.
@@ -34,6 +35,22 @@ module UnionStationHooks
       # methods are made private.
       public_instance_methods(false).each do |method_name|
         klass.send(:private, method_name)
+      end
+    end
+
+    def require_key(options, key)
+      if !options.key?(key)
+        raise ArgumentError, "Option #{key.inspect} is required"
+      end
+    end
+
+    def require_non_empty_key(options, key)
+      value = options[key]
+      if value.nil? || value.empty?
+        raise ArgumentError, "Option #{key.inspect} is required " \
+          "and must be non-empty"
+      else
+        value
       end
     end
 
@@ -69,6 +86,46 @@ module UnionStationHooks
         host == '127.0.0.1' || host == '::1' || host == 'localhost'
       else
         raise ArgumentError, "Unknown socket address type for '#{address}'."
+      end
+    end
+
+    def encoded_timestamp(time = Time.now)
+      timestamp = time.to_i * 1_000_000 + time.usec
+      timestamp.to_s(36)
+    end
+
+    if Base64.respond_to?(:strict_encode64)
+      def base64(data)
+        Base64.strict_encode64(data)
+      end
+    else
+      # Base64-encodes the given data. Newlines are removed.
+      # This is like `Base64.strict_encode64`, but also works
+      # on Ruby 1.8 which doesn't have that method.
+      def base64(data)
+        result = Base64.encode64(data)
+        result.delete!("\n")
+        result
+      end
+    end
+
+    def process_ust_router_reply(channel)
+      result = channel.read
+
+      if result[0] != 'status'
+        raise "Expected UstRouter to respond with 'status', " \
+          "but got #{result.inspect} instead"
+      end
+
+      if result[1] == 'error'
+        if result[2]
+          raise "Unable to close transaction: #{result[2]}"
+        else
+          raise 'Unable to close transaction (no server message given)'
+        end
+      elsif result[1] != 'ok'
+        raise "Expected UstRouter to respond with 'ok' or 'error', " \
+          "but got #{result.inspect} instead"
       end
     end
 
