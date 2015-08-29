@@ -1,0 +1,161 @@
+#  Union Station - https://www.unionstationapp.com/
+#  Copyright (c) 2010-2015 Phusion Holding B.V.
+#
+#  "Union Station" and "Passenger" are trademarks of Phusion Holding B.V.
+#
+#  Permission is hereby granted, free of charge, to any person obtaining a copy
+#  of this software and associated documentation files (the "Software"), to deal
+#  in the Software without restriction, including without limitation the rights
+#  to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+#  copies of the Software, and to permit persons to whom the Software is
+#  furnished to do so, subject to the following conditions:
+#
+#  The above copyright notice and this permission notice shall be included in
+#  all copies or substantial portions of the Software.
+#
+#  THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+#  IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+#  FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+#  AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+#  LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+#  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+#  THE SOFTWARE.
+
+require File.expand_path(File.dirname(__FILE__) + '/spec_helper')
+require 'tmpdir'
+require 'fileutils'
+
+describe UnionStationHooks do
+  before :each do
+    @tmpdir = Dir.mktmpdir
+  end
+
+  after :each do
+    FileUtils.rm_rf(@tmpdir)
+  end
+
+  def execute(code)
+    code_path = "#{@tmpdir}/code.rb"
+    write_file(code_path, code)
+
+    result_path = "#{@tmpdir}/result"
+    main_lib_path = "#{UnionStationHooks::LIBROOT}/union_station_hooks_core"
+    runner_path = "#{@tmpdir}/runner.rb"
+    runner = %Q{
+      require #{main_lib_path.inspect}
+      UnionStationHooks.config[:union_station_key] = 'any-key'
+      UnionStationHooks.config[:app_group_name] = 'any-app'
+      UnionStationHooks.config[:ust_router_address] = 'tcp://not-relevant:1234'
+      UnionStationHooks.config[:ust_router_password] = 'not-relevant'
+      result = eval(File.read(#{code_path.inspect}), binding, #{code_path.inspect})
+      File.open(#{result_path.inspect}, 'w') do |f|
+        f.write(Marshal.dump(result))
+      end
+    }
+    write_file(runner_path, runner)
+
+    result = system('ruby', runner_path)
+    if !result
+      raise "Error evaluating code:\n#{code}"
+    end
+
+    File.open(result_path, 'rb') do |f|
+      Marshal.load(f.read)
+    end
+  end
+
+  it 'is not vendored by default' do
+    expect(UnionStationHooks.vendored?).to be_falsey
+  end
+
+  it 'allows initialization when Passenger is not loaded' do
+    code = %Q{
+      UnionStationHooks.should_initialize?
+    }
+    expect(execute(code)).to be_truthy
+  end
+
+  describe '#initialize!' do
+    it 'initializes the Union Station hooks' do
+      code = %Q{
+        result = UnionStationHooks.initialize!
+        {
+          :result => result,
+          :initialized => UnionStationHooks.initialized?,
+          :vendored => UnionStationHooks.vendored?,
+          :context_available => !UnionStationHooks.context.nil?,
+          :app_group_name => UnionStationHooks.app_group_name,
+          :key => UnionStationHooks.key
+        }
+      }
+      expect(execute(code)).to eq(
+        :result => true,
+        :initialized => true,
+        :vendored => false,
+        :context_available => true,
+        :app_group_name => 'any-app',
+        :key => 'any-key'
+      )
+    end
+
+    it 'freezes the configuration hash' do
+      code = %Q{
+        UnionStationHooks.initialize!
+        {
+          :config_frozen => UnionStationHooks.config.frozen?
+        }
+      }
+      expect(execute(code)).to eq(
+        :config_frozen => true
+      )
+    end
+
+    it 'symbolizes configuration keys' do
+      code = %Q{
+        UnionStationHooks.config[:foo] = 1234
+        UnionStationHooks.config['bar'] = 5678
+        UnionStationHooks.initialize!
+        UnionStationHooks.config
+      }
+      result = execute(code)
+      expect(result[:foo]).to eq(1234)
+      expect(result[:bar]).to eq(5678)
+    end
+
+    it 'does nothing when already initialized' do
+      code = %Q{
+        result = UnionStationHooks.initialize!
+        result2 = UnionStationHooks.initialize!
+        {
+          :result => result,
+          :result2 => result2,
+          :initialized => UnionStationHooks.initialized?
+        }
+      }
+      expect(execute(code)).to eq(
+        :result => true,
+        :result2 => true,
+        :initialized => true
+      )
+    end
+
+    it 'calls #initialize! on any registered initializers' do
+      code = %Q{
+        class Foo
+          def self.initialize!
+            $foo_initialized = true
+          end
+        end
+
+        UnionStationHooks.initializers << Foo
+        UnionStationHooks.initialize!
+        {
+          :foo_initialized => $foo_initialized
+        }
+      }
+      expect(execute(code)).to eq(
+        :foo_initialized => true
+      )
+    end
+  end
+end

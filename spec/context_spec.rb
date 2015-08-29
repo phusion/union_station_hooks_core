@@ -78,6 +78,12 @@ describe Context do
     UnionStationHooks::Log.warn_callback = lambda { |message| }
   end
 
+  def prepare_debug_shell
+    Dir.chdir(@tmpdir)
+    puts "You are at #{@tmpdir}."
+    puts "You can find UstRouter dump files in this directory."
+  end
+
   describe "#new_transaction" do
     it "returns a Transaction that allows logging" do
       start_agent

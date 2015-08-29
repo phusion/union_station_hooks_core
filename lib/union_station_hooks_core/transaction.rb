@@ -31,11 +31,13 @@ module UnionStationHooks
   class Transaction
     attr_reader :txn_id
 
-    def initialize(connection = nil, txn_id = nil)
-      return if !connection
+    def initialize(connection, txn_id)
       @connection = connection
       @txn_id = txn_id
-      connection.ref
+      if connection
+        raise ArgumentError, 'Transaction ID required' if txn_id.nil?
+        connection.ref
+      end
     end
 
     def null?
@@ -64,7 +66,7 @@ module UnionStationHooks
       end
     end
 
-    def log_activity(name, extra_info = nil)
+    def log_activity_block(name, extra_info = nil)
       has_error = false
       log_activity_begin(name, UnionStationHooks.now, extra_info)
       begin
@@ -116,7 +118,7 @@ module UnionStationHooks
     end
     # rubocop:enable Metrics/AbcSize
 
-    def log_activity_happened(name, begin_time, end_time, extra_info = nil, has_error = false)
+    def log_activity(name, begin_time, end_time, extra_info = nil, has_error = false)
       log_activity_begin(name, begin_time, extra_info)
       log_activity_end(name, end_time, has_error)
     end

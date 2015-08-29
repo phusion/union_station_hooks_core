@@ -36,15 +36,24 @@ describe Transaction do
     @tmpdir   = Dir.mktmpdir
     @socket_filename = "#{@tmpdir}/ust_router.socket"
     @socket_address  = "unix:#{@socket_filename}"
-    @context = Context.new(@socket_address, @username, @password, "localhost")
   end
 
   after :each do
-    @context.close
+    @transaction.close if @transaction
+    @context.close if @context
     kill_agent
     FileUtils.rm_rf(@tmpdir) if @tmpdir
     Timecop.return
     UnionStationHooks::Log.warn_callback = nil
+  end
+
+  def create_context
+    @context = Context.new(@socket_address, @username, @password, "localhost")
+  end
+
+  def create_transaction
+    @transaction = @context.new_transaction('foobar')
+    expect(@transaction).not_to be_null
   end
 
   def start_agent
@@ -72,113 +81,210 @@ describe Transaction do
     UnionStationHooks::Log.warn_callback = lambda { |message| }
   end
 
-  it "becomes null once it is closed" do
-    start_agent
-    transaction = @context.new_transaction("foobar")
-    expect(transaction).not_to be_null
-    transaction.close
-    expect(transaction).to be_null
+  def prepare_debug_shell
+    Dir.chdir(@tmpdir)
+    puts "You are at #{@tmpdir}."
+    puts "You can find UstRouter dump files in this directory."
   end
 
-  it "does nothing if it's null" do
+  it 'complains if a connection is given without transaction ID' do
+    connection = double('Connection')
+    expect { Transaction.new(connection, nil) }.to raise_error(ArgumentError)
+  end
+
+  it 'enters the null mode upon closing' do
     start_agent
-    logger = Context.new(nil, nil, nil, nil)
-    begin
-      transaction = logger.new_transaction('foobar')
-      expect(transaction).to be_null
-      transaction.message('hello')
-      transaction.close(true)
-    ensure
-      logger.close
+    create_context
+    create_transaction
+    @transaction.close
+    expect(@transaction).to be_null
+  end
+
+  describe '#message' do
+    it 'logs the given message' do
+      start_agent
+      create_context
+      create_transaction
+      @transaction.message('hello')
+      @transaction.close(true)
+      eventually do
+        File.exist?(dump_file_path) &&
+          read_dump_file.include?('hello')
+      end
     end
 
-    expect(File.exist?(dump_file_path)).to be_falsey
+    it "enters null mode upon encountering an I/O error" do
+      start_agent
+      create_context
+      create_transaction
+
+      expect(@transaction).to receive(:io_operation).
+        at_least(:once).and_call_original
+      expect(@context.connection).to receive(:disconnect).
+        and_call_original
+      silence_warnings
+      kill_agent
+      @transaction.message('hello')
+      expect(@transaction).to be_null
+
+      should_never_happen do
+        File.exist?(dump_file_path) &&
+          read_dump_file.include?('hello')
+      end
+    end
   end
 
   describe '#log_activity_begin' do
-    before :each do
+    def create_working_context_and_transaction
+      create_context
       start_agent
-      @transaction = @context.new_transaction('foobar')
-      expect(@transaction).not_to be_null
-    end
-
-    after :each do
-      @transaction.close
+      create_transaction
     end
 
     it 'logs a BEGIN message' do
+      create_working_context_and_transaction
       expect(@transaction).to receive(:message).with(
-        /^BEGIN: hello \(.+?\) $/)
+        /^BEGIN: hello \(.+?\) $/).
+        and_call_original
+      expect(@transaction).to receive(:io_operation).
+        at_least(:once).and_call_original
       @transaction.log_activity_begin('hello')
     end
 
     it 'adds extra information as base64' do
+      create_working_context_and_transaction
       expect(@transaction).to receive(:message).with(
-        /^BEGIN: hello \(.+?\) YWJjZA==$/)
+        /^BEGIN: hello \(.+?\) YWJjZA==$/).
+        and_call_original
+      expect(@transaction).to receive(:io_operation).
+        at_least(:once).and_call_original
       @transaction.log_activity_begin('hello', UnionStationHooks.now, 'abcd')
     end
 
     it 'accepts a TimePoint as time' do
+      create_working_context_and_transaction
       expect(@transaction).to receive(:message).with(
-        /^BEGIN: hello \([a-z0-9]+,[a-z0-9]+,[a-z0-9]+\) $/)
+        /^BEGIN: hello \([a-z0-9]+,[a-z0-9]+,[a-z0-9]+\) $/).
+        and_call_original
+      expect(@transaction).to receive(:io_operation).
+        at_least(:once).and_call_original
       @transaction.log_activity_begin('hello', UnionStationHooks.now)
     end
 
     it 'accepts a Time as time, but outputs less detailed information' do
+      create_working_context_and_transaction
       expect(@transaction).to receive(:message).with(
-        /^BEGIN: hello \([a-z0-9]+\) $/)
+        /^BEGIN: hello \([a-z0-9]+\) $/).
+        and_call_original
+      expect(@transaction).to receive(:io_operation).
+        at_least(:once).and_call_original
       @transaction.log_activity_begin('hello', Time.now)
+    end
+
+    it "enters null mode upon encountering an I/O error" do
+      create_working_context_and_transaction
+
+      expect(@transaction).to receive(:io_operation).
+        at_least(:once).and_call_original
+      expect(@context.connection).to receive(:disconnect).
+        and_call_original
+      kill_agent
+      silence_warnings
+      @transaction.log_activity_begin('hello')
+      expect(@transaction).to be_null
+
+      should_never_happen do
+        File.exist?(dump_file_path) &&
+          read_dump_file.include?('hello')
+      end
     end
   end
 
   describe '#log_activity_end' do
-    before :each do
+    def create_working_context_and_transaction
+      create_context
       start_agent
-      @transaction = @context.new_transaction('foobar')
-      expect(@transaction).not_to be_null
-    end
-
-    after :each do
-      @transaction.close
+      create_transaction
     end
 
     context 'if has_error=false' do
       it 'logs an END message' do
+        create_working_context_and_transaction
         expect(@transaction).to receive(:message).with(
-          /^END: hello \(.+?\)$/)
+          /^END: hello \(.+?\)$/).
+          and_call_original
+        expect(@transaction).to receive(:io_operation).
+          at_least(:once).and_call_original
         @transaction.log_activity_end('hello')
       end
 
       it 'accepts a TimePoint as time' do
+        create_working_context_and_transaction
         expect(@transaction).to receive(:message).with(
-          /^END: hello \([a-z0-9]+,[a-z0-9]+,[a-z0-9]+\)$/)
+          /^END: hello \([a-z0-9]+,[a-z0-9]+,[a-z0-9]+\)$/).
+          and_call_original
+        expect(@transaction).to receive(:io_operation).
+          at_least(:once).and_call_original
         @transaction.log_activity_end('hello', UnionStationHooks.now)
       end
 
       it 'accepts a Time as time, but outputs less detailed information' do
+        create_working_context_and_transaction
         expect(@transaction).to receive(:message).with(
-          /^END: hello \([a-z0-9]+\)$/)
+          /^END: hello \([a-z0-9]+\)$/).
+          and_call_original
+        expect(@transaction).to receive(:io_operation).
+          at_least(:once).and_call_original
         @transaction.log_activity_end('hello', Time.now)
       end
     end
 
     context 'if has_error=true' do
       it 'logs a FAIL message' do
+        create_working_context_and_transaction
         expect(@transaction).to receive(:message).with(
           /^FAIL: hello \(.+?\)$/)
+        expect(@transaction).to receive(:io_operation).
+          at_least(:once).and_call_original
         @transaction.log_activity_end('hello', UnionStationHooks.now, true)
       end
 
       it 'accepts a TimePoint as time' do
+        create_working_context_and_transaction
         expect(@transaction).to receive(:message).with(
-          /^FAIL: hello \([a-z0-9]+,[a-z0-9]+,[a-z0-9]+\)$/)
+          /^FAIL: hello \([a-z0-9]+,[a-z0-9]+,[a-z0-9]+\)$/).
+          and_call_original
+        expect(@transaction).to receive(:io_operation).
+          at_least(:once).and_call_original
         @transaction.log_activity_end('hello', UnionStationHooks.now, true)
       end
 
       it 'accepts a Time as time, but outputs less detailed information' do
+        create_working_context_and_transaction
         expect(@transaction).to receive(:message).with(
-          /^FAIL: hello \([a-z0-9]+\)$/)
+          /^FAIL: hello \([a-z0-9]+\)$/).
+          and_call_original
+        expect(@transaction).to receive(:io_operation).
+          at_least(:once).and_call_original
         @transaction.log_activity_end('hello', Time.now, true)
+      end
+    end
+
+    it "enters null mode upon encountering an I/O error" do
+      create_working_context_and_transaction
+
+      expect(@transaction).to receive(:io_operation).
+        at_least(:once).and_call_original
+      expect(@context.connection).to receive(:disconnect).
+        and_call_original
+      kill_agent
+      silence_warnings
+      @transaction.log_activity_end('hello')
+      expect(@transaction).to be_null
+
+      should_never_happen do
+        File.exist?(dump_file_path) &&
+          read_dump_file.include?('hello')
       end
     end
   end

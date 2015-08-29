@@ -22,6 +22,7 @@
 #  THE SOFTWARE.
 
 require 'thread'
+require 'socket'
 UnionStationHooks.require_lib 'connection'
 UnionStationHooks.require_lib 'transaction'
 UnionStationHooks.require_lib 'log'
@@ -76,6 +77,12 @@ module UnionStationHooks
       @next_reconnect_time = Time.utc(1980, 1, 1)
     end
 
+    def connection
+      @mutex.synchronize do
+        @connection
+      end
+    end
+
     def clear_connection
       @mutex.synchronize do
         @connection.synchronize do
@@ -98,7 +105,7 @@ module UnionStationHooks
 
     def new_transaction(group_name, category = :requests, union_station_key = "-")
       if !@server_address
-        return Transaction.new
+        return Transaction.new(nil, nil)
       elsif !group_name || group_name.empty?
         raise ArgumentError, "Group name may not be empty"
       end
@@ -108,7 +115,7 @@ module UnionStationHooks
 
       Lock.new(@mutex).synchronize do |lock|
         if Time.now < @next_reconnect_time
-          return Transaction.new
+          return Transaction.new(nil, nil)
         end
 
         Lock.new(@connection.mutex).synchronize do |connection_lock|
@@ -122,7 +129,7 @@ module UnionStationHooks
                 "Cannot connect to the UstRouter at #{@server_address}; " +
                 "retrying in #{@reconnect_timeout} second(s).")
               @next_reconnect_time = Time.now + @reconnect_timeout
-              return Transaction.new
+              return Transaction.new(nil, nil)
             rescue Exception => e
               @connection.disconnect
               raise e
@@ -159,7 +166,7 @@ module UnionStationHooks
               " closed the connection; will reconnect in " <<
               "#{@reconnect_timeout} second(s).")
             @next_reconnect_time = Time.now + @reconnect_timeout
-            return Transaction.new
+            return Transaction.new(nil, nil)
           rescue Exception => e
             @connection.disconnect
             raise e
@@ -170,14 +177,14 @@ module UnionStationHooks
 
     def continue_transaction(txn_id, group_name, category = :requests, union_station_key = "-")
       if !@server_address
-        return Transaction.new
+        return Transaction.new(nil, nil)
       elsif !txn_id || txn_id.empty?
         raise ArgumentError, "Transaction ID may not be empty"
       end
 
       Lock.new(@mutex).synchronize do |lock|
         if Time.now < @next_reconnect_time
-          return Transaction.new
+          return Transaction.new(nil, nil)
         end
 
         Lock.new(@connection.mutex).synchronize do |connection_lock|
@@ -191,7 +198,7 @@ module UnionStationHooks
                 "Cannot connect to the UstRouter at #{@server_address}; " +
                 "retrying in #{@reconnect_timeout} second(s).")
               @next_reconnect_time = Time.now + @reconnect_timeout
-              return Transaction.new
+              return Transaction.new(nil, nil)
             rescue Exception => e
               @connection.disconnect
               raise e
@@ -212,7 +219,7 @@ module UnionStationHooks
               " closed the connection; will reconnect in " <<
               "#{@reconnect_timeout} second(s).")
             @next_reconnect_time = Time.now + @reconnect_timeout
-            return Transaction.new
+            return Transaction.new(nil, nil)
           rescue Exception => e
             @connection.disconnect
             raise e

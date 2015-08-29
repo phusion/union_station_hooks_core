@@ -26,9 +26,21 @@ require("#{ROOT}/lib/union_station_hooks_core")
 UnionStationHooks.require_lib 'spec_helper'
 UnionStationHooks::SpecHelper.initialize!
 
+require 'yaml'
 require 'timecop'
 
+ruby_versions_file_path = "#{ROOT}/ruby_versions.yml"
+if !File.exist?(ruby_versions_file_path)
+  abort 'Please create a file "ruby_versions.yml". ' \
+    'See "ruby_versions.yml.example" for more information.'
+end
+
+RUBY_VERSIONS_TO_TEST = YAML.load_file(ruby_versions_file_path)
+
 module SpecHelper
+  # Generic helper method for spawning a process in the background.
+  #
+  # @return [Integer] The process's PID.
   def spawn_process(*args)
     args.map! { |arg| arg.to_s }
     if Process.respond_to?(:spawn)
@@ -40,6 +52,20 @@ module SpecHelper
     end
   end
 
+  # Spawns an instance of the UstRouter in the background. The UstRouter will
+  # be started in development mode, which means that it will dump all data sent
+  # to it to files on the filesystem, instead of sending that data to the Union
+  # Station service.
+  #
+  # @param [String] tmpdir  A path to a temporary directory. This method will
+  #   use that directory as a scratch area, as well as making the UstRouter
+  #   dump its data to that directory.
+  # @param [String] socket_filename  The filename of the Unix domain socket
+  #   that the UstRouter should listen on.
+  # @param [String] password  The password that the UstRouter should use for.
+  #   authenticating clients. Since we're testing, a simple password like `1234`
+  #   will do.
+  # @return [Integer] The UstRouter's PID.
   def spawn_ust_router(tmpdir, socket_filename, password)
     password_filename = "#{tmpdir}/password"
     write_file(password_filename, password)
@@ -62,16 +88,6 @@ module SpecHelper
       Process.waitpid(pid)
     end
     raise e
-  end
-
-  def flush_ust_router(password, socket_address)
-    client = MessageClient.new('logging', password, socket_address)
-    begin
-      client.write('flush')
-      client.read
-    ensure
-      client.close
-    end
   end
 end
 

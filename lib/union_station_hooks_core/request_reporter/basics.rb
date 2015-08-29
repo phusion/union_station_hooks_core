@@ -58,8 +58,8 @@ module UnionStationHooks
     #
     # @private
     def log_request_begin
-      return if null?
-      @transaction.log_event_begin('app request handler processing')
+      return do_nothing_on_null(:log_request_begin) if null?
+      @transaction.log_activity_begin('app request handler processing')
     end
 
     # Log the end of a Rack request. This is automatically called
@@ -68,16 +68,16 @@ module UnionStationHooks
     #
     # @private
     def log_request_end(uncaught_exception_raised_during_request = false)
-      return if null?
-      @transaction.log_event_end('app request handler processing',
-        uncaught_exception_raised_during_request)
+      return do_nothing_on_null(:log_request_end) if null?
+      @transaction.log_activity_end('app request handler processing',
+        UnionStationHooks.now, uncaught_exception_raised_during_request)
     end
 
     # rubocop:disable Metrics/CyclomaticComplexity,Metrics/PerceivedComplexity
 
     # @private
     def log_gc_stats_on_request_begin
-      return if null?
+      return do_nothing_on_null(:log_gc_stats_on_request_begin) if null?
 
       # See the docs for MUTEX on why we synchronize this.
       GC_MUTEX.synchronize do
@@ -101,7 +101,7 @@ module UnionStationHooks
 
     # @private
     def log_gc_stats_on_request_end
-      return if null?
+      return do_nothing_on_null(:log_gc_stats_on_request_end) if null?
 
       # See the docs for MUTEX on why we synchronize this.
       GC_MUTEX.synchronize do

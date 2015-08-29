@@ -1,0 +1,11 @@
+# This configuration file tells the test suite which Ruby interpreters to
+# test against. Below is an example utilizing RVM.
+
+- name: Ruby 1.8.7
+  command: rvm-exec ruby-1.8.7-p352 ruby
+- name: Ruby 1.9.3
+  command: rvm-exec ruby-1.9.3-p547 ruby
+- name: Ruby 2.2.1
+  command: rvm-exec ruby-2.2.1 ruby
+- name: JRuby 9.0.0.0
+  command: rvm-exec jruby-9.0.0.0.pre1 ruby --dev

@@ -38,19 +38,20 @@ module UnionStationHooks
     #
     # @param name The name that should show up in the activity timeline.
     #   It can be any arbitrary name but may not contain newlines.
-    # @return The block's return value.
+    # @return The return value of the block.
     # @yield The block is expected to perform the activity.
     # @example
-    #   reporter.log_activity("Preheat cache") do
+    #   reporter.log_activity_block('Preheat cache') do
     #     calculate_preheat_values.each_pair do |key, value|
     #       Rails.cache.write(key, value)
     #     end
     #   end
-    def log_activity(name, &block)
+    def log_activity_block(name, &block)
       if null?
+        do_nothing_on_null(:log_activity_block)
         yield
       else
-        @transaction.log_activity(name, &block)
+        @transaction.log_activity_block(name, &block)
       end
     end
 
@@ -65,36 +66,39 @@ module UnionStationHooks
     # But you can also use it to integrate with the Ruby standard library's
     # `Benchmark` class.
     #
-    # You can wrap a benchmark call in a `UnionStationHooks.log_benchmark`
-    # call, so that an entry for it is displayed in the acitivity timeline.
-    # This method measures the time before and after the block runs.
+    # You can wrap a benchmark call in a
+    # `UnionStationHooks.log_benchmark_block` call, so that an entry for it is
+    # displayed in the acitivity timeline. This method measures the time before
+    # and after the block runs.
     #
-    # The difference between this method and {#log_activity} is that this
-    # method generates timeline blocks of a different color, as to differentiate
-    # user-defined activities from benchmark activities.
+    # The difference between this method and {#log_activity_block} is that this
+    # method generates timeline blocks of a different color, as to
+    # differentiate user-defined activities from benchmark activities.
     #
     # If your app is a Rails app, then the `union_station_hooks_rails` gem
     # automatically calls this for you every time
     # `ActiveSupport::Benchmarkable#benchmark` is called. This includes
     # `benchmark` calls from controllers and from views.
     #
-    # @param title A title for this benchmark.
-    # @return The block's return value.
+    # @param title A title for this benchmark. It can be any arbitrary name but
+    #   may not contain newlines.
+    # @return The return value of the block.
     # @yield The block is expected to perform the benchmarking activity.
     # @example Rails example
     #   # This example shows what to put inside a Rails controller action
-    #   # method. Note that the `log_benchmark` call is automatically done for
-    #   # you if you use the union_station_hooks_rails gem.
-    #   UnionStationHooks.log_benchmark('Process data files') do
+    #   # method. Note that the `log_benchmark_block` call is automatically done
+    #   # for you if you use the union_station_hooks_rails gem.
+    #   UnionStationHooks.log_benchmark_block('Process data files') do
     #     benchmark('Process data files') do
     #       expensive_files_operation
     #     end
     #   end
-    def log_benchmark(title = 'Benchmarking', &block)
+    def log_benchmark_block(title = 'Benchmarking', &block)
       if null?
+        do_nothing_on_null(:log_benchmark_block)
         yield
       else
-        log_activity("BENCHMARK: #{title}", &block)
+        log_activity_block("BENCHMARK: #{title}", &block)
       end
     end
 
@@ -111,17 +115,17 @@ module UnionStationHooks
         :exceptions,
         @key)
       begin
+        return do_nothing_on_null(:log_exception) if transaction.null?
+
         base64_message = exception.message
         base64_message = exception.to_s if base64_message.empty?
         base64_message = Utils.base64(base64_message)
         base64_backtrace = Utils.base64(exception.backtrace.join("\n"))
 
-        if @txn_id
-          transaction.message("Request transaction ID: #{@txn_id}")
-        end
         if @controller_action
           transaction.message("Controller action: #{@controller_action}")
         end
+        transaction.message("Request transaction ID: #{@txn_id}")
         transaction.message("Message: #{base64_message}")
         transaction.message("Class: #{exception.class.name}")
         transaction.message("Backtrace: #{base64_backtrace}")
@@ -140,7 +144,7 @@ module UnionStationHooks
     #   database query ended. See {UnionStationHooks.now} to learn more.
     # @option options [String] :query The database query string.
     def log_database_query(options)
-      return if null?
+      return do_nothing_on_null(:log_database_query) if null?
       Utils.require_key(options, :begin_time)
       Utils.require_key(options, :end_time)
       Utils.require_non_empty_key(options, :query)
@@ -151,7 +155,7 @@ module UnionStationHooks
       query = options[:query]
 
       digest = Digest::MD5.hexdigest("#{name}\0#{query}\0#{rand}")
-      @transaction.log_activity_happened("DB BENCHMARK: #{digest}",
+      @transaction.log_activity("DB BENCHMARK: #{digest}",
         begin_time, end_time, "#{name}\n#{query}")
     end
 
@@ -171,8 +175,11 @@ module UnionStationHooks
     #
     # @param [String] name A unique name for this cache hit event. The cache
     #   key is a good value to use.
+    # @note At present (30 September 2015), logged cache hit/miss information
+    #   isn't shown in the Union Station interface. We may implement this
+    #   feature in the near future.
     def log_cache_hit(name)
-      return if null?
+      return do_nothing_on_null(:log_cache_hit) if null?
       @transaction.message("Cache hit: #{name}")
     end
 
@@ -195,8 +202,11 @@ module UnionStationHooks
     # @param [Integer] miss_cost_duration The amount of time that was spent in
     #   calculating or processing something, as a result of this cache miss.
     #   This time is in **microseconds**.
+    # @note At present (30 September 2015), logged cache hit/miss information
+    #   isn't shown in the Union Station interface. We may implement this
+    #   feature in the near future.
     def log_cache_miss(name, miss_cost_duration = nil)
-      return if null?
+      return do_nothing_on_null(:log_cache_miss) if null?
       if miss_cost_duration
         @transaction.message("Cache miss (#{miss_cost_duration.to_i} usec): " \
           "#{name}")

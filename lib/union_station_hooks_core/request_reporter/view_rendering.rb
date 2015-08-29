@@ -38,24 +38,25 @@ module UnionStationHooks
     #
     # @yield The given block is expected to perform the actual view rendering.
     # @return The return value of the block.
-    def log_view_rendering(&block)
+    def log_view_rendering_block(&block)
       if null?
+        do_nothing_on_null(:log_view_rendering_block)
         yield
       else
-        log_activity('view rendering', &block)
+        log_activity_block('view rendering', &block)
       end
     end
 
     # Logs timing information about the rendering of a single view, template or
     # partial.
     #
-    # Unlike {#log_view_rendering}, this form does not expect a block.
+    # Unlike {#log_view_rendering_block}, this form does not expect a block.
     # However, you are expected to pass timing information to the options
     # hash.
     #
     # The `union_station_hooks_rails` gem automatically calls
-    # {#log_view_rendering} for you if your application is a Rails app. It will
-    # call this on every view or partial rendering.
+    # {#log_view_rendering_block} for you if your application is a Rails app.
+    # It will call this on every view or partial rendering.
     #
     # @option options [TimePoint or Time] :begin_time The time at which this
     #   view rendering begun. See {UnionStationHooks.now} to learn more.
@@ -63,13 +64,13 @@ module UnionStationHooks
     #   rendering ended. See {UnionStationHooks.now} to learn more.
     # @option options [Boolean] :has_error (optional) Whether an uncaught
     #   exception occurred during the view rendering. Default: false.
-    def log_view_rendering_happened(options)
-      return if null?
+    def log_view_rendering(options)
+      return do_nothing_on_null(:log_view_rendering) if null?
       Utils.require_key(options, :begin_time)
       Utils.require_key(options, :end_time)
 
-      @transaction.log_activity_happened('view rendering',
-        options[:begin_time], options[:end_time], nil, options[:has_error])
+      @transaction.log_activity('view rendering', options[:begin_time],
+        options[:end_time], nil, options[:has_error])
     end
   end
 end

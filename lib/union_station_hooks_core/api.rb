@@ -172,6 +172,9 @@ module UnionStationHooks
       @@config.freeze
       @@app_group_name = @@config[:app_group_name]
       @@key = @@config[:union_station_key]
+      if @@config[:debug]
+        UnionStationHooks::Log.debugging = true
+      end
       @@initialized = true
     end
   end

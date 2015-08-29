@@ -1,6 +1,12 @@
+require 'shellwords'
+
 desc 'Run tests'
 task :spec do
-  sh 'bundle exec rspec -c -f d spec/*_spec.rb'
+  pattern = ENV['E']
+  if pattern
+    args = "-e #{Shellwords.escape(pattern)}"
+  end
+  sh "bundle exec rspec -c -f d spec/*_spec.rb #{args}"
 end
 
 task :test => :spec

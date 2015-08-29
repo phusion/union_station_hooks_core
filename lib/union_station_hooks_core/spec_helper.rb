@@ -134,6 +134,27 @@ module UnionStationHooks
       end
     end
 
+    # Opens a debug shell. By default, the debug shell is opened in the current
+    # working directory. If the current module has the `prepare_debug_shell`
+    # method, that method is called before opening the debug shell. The method
+    # could, for example, change the working directory.
+    #
+    # This method does *not* raise an exception if the debug shell exits with
+    # an error.
+    def debug_shell
+      puts '------ Opening debug shell -----'
+      @orig_dir = Dir.pwd
+      begin
+        if respond_to?(:prepare_debug_shell)
+          prepare_debug_shell
+        end
+        system('bash')
+      ensure
+        Dir.chdir(@orig_dir)
+      end
+      puts '------ Exiting debug shell -----'
+    end
+
     # Asserts that something should eventually happen. This is done by checking
     # that the given block eventually returns true. The block is called
     # once every `check_interval` msec. If the block does not return true

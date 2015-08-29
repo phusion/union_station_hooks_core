@@ -1,4 +1,3 @@
-# encoding: binary
 #  Union Station - https://www.unionstationapp.com/
 #  Copyright (c) 2010-2015 Phusion Holding B.V.
 #
@@ -24,6 +23,10 @@
 
 
 module UnionStationHooks
+  # Provides methods for `union_station_*` gems to log internal warnings and
+  # debugging messages. This module is *not* to be used by application
+  # developers for the purpose of logging information to Union Station.
+  #
   # @private
   module Log
     @@debugging = false

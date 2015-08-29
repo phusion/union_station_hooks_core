@@ -77,7 +77,7 @@ module UnionStationHooks
   #
   #     The UstRouter is a Passenger process which runs locally and is
   #     responsible for aggregating Union Station log data from multiple
-  #     processes, with the goal of sending the aggergate data over the network
+  #     processes, with the goal of sending the aggregate data over the network
   #     to the Union Station service.
   #
   #     This kind of error is automatically recovered from after a certain
@@ -130,6 +130,12 @@ module UnionStationHooks
     def continue_transaction
       @context.continue_transaction(@txn_id, @app_group_name,
         :requests, @key)
+    end
+
+    # Called when one of the methods return early upon detecting null
+    # mode. Used by tests to verify that methods return early.
+    def do_nothing_on_null(source)
+      # Do nothing by default. Tests will stub this.
     end
   end
 end

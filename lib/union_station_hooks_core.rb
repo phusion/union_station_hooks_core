@@ -37,9 +37,9 @@ end
 # `union_station_hooks_core` gem's public API. Note that this API is only
 # available since Passenger X.X.X!
 #
-# **Not familiar with `union_station_hooks_core`? Please read the
+# **_Not familiar with `union_station_hooks_core`? Please read the
 # [README](https://github.com/phusion/union_station_hooks_core)
-# for an introduction.**
+# for an introduction._**
 #
 # ## Places of interest
 #
@@ -273,12 +273,16 @@ module UnionStationHooks
         if defined?(::Rails)
           raise 'The Union Station hooks are not initialized. Please ensure ' \
             'that you have an initializer file ' \
-            '`config/initializers/union_station.rb` in which you call ' \
-            '`UnionStationHooks.initialize!`'
+            "`config/initializers/union_station.rb` in which you call this:\n\n" \
+            "  if defined?(UnionStationHooks)\n" \
+            "    UnionStationHooks.initialize!\n" \
+            '  end'
         else
           raise 'The Union Station hooks are not initialized. Please ensure ' \
-            'that `UnionStationHooks.initialize!` is called during ' \
-            'application startup'
+            "that the following code is called during application startup:\n\n" \
+            "  if defined?(UnionStationHooks)\n" \
+            "    UnionStationHooks.initialize!\n" \
+            '  end'
         end
       end
     end
