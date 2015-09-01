@@ -21,16 +21,23 @@
 #  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 #  THE SOFTWARE.
 
-if defined?(UnionStationHooks::VERSION_STRING) && UnionStationHooks.vendored?
-  # Passenger loaded its vendored Union Station hooks code, but the application
-  # has also included 'union_station_hooks_*' in its Gemfile. We want the
-  # version in the Gemfile to take precedence, so we unload the old version. At
-  # this point, the Union Station hooks aren't installed yet, so removing the
-  # module is enough to unload the old version.
-  #
-  # See also hacking/Vendoring.md
-  config_from_vendored_ush = UnionStationHooks.config
-  Object.send(:remove_const, :UnionStationHooks)
+if defined?(UnionStationHooks::VERSION_STRING)
+  if UnionStationHooks.initialized?
+    raise 'Attempted to load union_station_hooks_core even though an ' \
+      'alternative version was already loaded and initialized'
+  end
+  if UnionStationHooks.vendored?
+    # Passenger loaded its vendored Union Station hooks code, but the application
+    # has also included 'union_station_hooks_*' in its Gemfile. We want the
+    # version in the Gemfile to take precedence, so we unload the old version. At
+    # this point, the Union Station hooks aren't installed yet, so removing the
+    # module is enough to unload the old version.
+    #
+    # See also hacking/Vendoring.md
+    config_from_vendored_ush = UnionStationHooks.config
+    initializers_from_vendored_ush = UnionStationHooks.initializers
+    Object.send(:remove_const, :UnionStationHooks)
+  end
 end
 
 # The UnionStationHooks module is the entry point to the
@@ -345,5 +352,6 @@ end
 UnionStationHooks.require_lib('version')
 
 if config_from_vendored_ush
-  UnionStationHooks.config.update(config_from_vendored_ush)
+  UnionStationHooks.config.replace(config_from_vendored_ush)
+  UnionStationHooks.initializers.replace(initializers_from_vendored_ush)
 end

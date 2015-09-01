@@ -119,6 +119,18 @@ describe UnionStationHooks do
       )
     end
 
+    it 'freezes the initializers list' do
+      code = %Q{
+        UnionStationHooks.initialize!
+        {
+          :initializers_frozen => UnionStationHooks.initializers.frozen?
+        }
+      }
+      expect(execute(code)).to eq(
+        :initializers_frozen => true
+      )
+    end
+
     it 'symbolizes configuration keys' do
       code = %Q{
         UnionStationHooks.config[:foo] = 1234
@@ -203,6 +215,69 @@ describe UnionStationHooks do
         :result2 => nil,
         :reporter_class_defined => false
       )
+    end
+  end
+
+  describe 'code upgrading' do
+    let(:preamble_code) do
+      %Q{
+        module UnionStationHooks
+          def self.old_method
+            true
+          end
+        end
+
+        UnionStationHooks.vendored = true
+
+        load "\#{UnionStationHooks::LIBROOT}/union_station_hooks_core.rb"
+      }
+    end
+
+    it 'overrides the existing vendored version of the UnionStationHooks namespace' do
+      code = %Q{
+        #{preamble_code}
+
+        {
+          :has_old_method => UnionStationHooks.respond_to?(:has_old_method),
+          :vendored => UnionStationHooks.vendored?
+        }
+      }
+      expect(execute(code)).to eq(
+        :has_old_method => false,
+        :vendored => false
+      )
+    end
+
+    it 'restores the old configuration' do
+      code = %Q{
+        UnionStationHooks.config[:foo] = 1234
+        #{preamble_code}
+        UnionStationHooks.config[:foo]
+      }
+      expect(execute(code)).to eq(1234)
+    end
+
+    it 'restores the old initializers list' do
+      code = %Q{
+        UnionStationHooks.initializers << 1234
+        #{preamble_code}
+        UnionStationHooks.initializers
+      }
+      expect(execute(code)).to eq([1234])
+    end
+
+    it 'raises an error if the old UnionStationHooks was already initialized' do
+      code = %Q{
+        UnionStationHooks.initialize!
+        begin
+          load "\#{UnionStationHooks::LIBROOT}/union_station_hooks_core.rb"
+          nil
+        rescue RuntimeError => e
+          e.message
+        end
+      }
+      expect(execute(code)).to include(
+        'alternative version was already loaded and initialized')
     end
   end
 end
