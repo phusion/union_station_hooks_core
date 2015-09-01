@@ -1,11 +1,13 @@
 source 'https://rubygems.org/'
 
 gem 'rake'
-
 gem 'rspec'
 gem 'timecop'
-gem 'simplecov', :require => false
-gem 'rubocop'
 
-gem 'yard'
-gem 'redcarpet'
+gem 'simplecov', :require => false
+gem 'rubocop', :groups => [:notravis]
+
+group :doc, :notravis do
+  gem 'yard'
+  gem 'redcarpet'
+end

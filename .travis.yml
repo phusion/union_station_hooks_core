@@ -1,0 +1,9 @@
+language: ruby
+install:
+  - bundle install --jobs=3 --retry=3 --deployment --without notravis
+cache:
+  directories:
+    - vendor/bundle
+    - passenger
+script: rake spec:travis
+sudo: false
