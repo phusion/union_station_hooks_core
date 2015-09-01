@@ -108,9 +108,10 @@ shared_examples_for 'a RequestReporter' do
       $txn_id = 'txn-1234'
 
       def create_reporter
-        UnionStationHooks::RequestReporter.new(UnionStationHooks.context,
-          $txn_id, UnionStationHooks.app_group_name,
-          UnionStationHooks.key)
+        $reporter =
+          UnionStationHooks::RequestReporter.new(UnionStationHooks.context,
+            $txn_id, UnionStationHooks.app_group_name,
+            UnionStationHooks.key)
       end
 
       def silence_warnings
@@ -135,9 +136,8 @@ shared_examples_for 'a RequestReporter' do
         result = eval(File.read(#{code_path.inspect}),
           binding, #{code_path.inspect})
 
-        vars = local_variables
-        if vars.include?(:reporter) || vars.include?('reporter')
-          reporter.close
+        if $reporter
+          $reporter.close
         end
 
         File.open(#{result_path.inspect}, 'w') do |f|
