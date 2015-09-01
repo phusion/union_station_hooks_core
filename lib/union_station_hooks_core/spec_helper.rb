@@ -22,6 +22,8 @@
 #  THE SOFTWARE.
 
 require 'fileutils'
+require 'net/http'
+require 'uri'
 
 module UnionStationHooks
   # Contains helper methods for use in unit tests across all the
@@ -131,6 +133,27 @@ module UnionStationHooks
       end
       File.open(path, 'wb') do |f|
         f.write(content)
+      end
+    end
+
+    def get_response(path)
+      uri = URI.parse("#{root_url}#{path}")
+      Net::HTTP.get_response(uri)
+    end
+
+    def get(path)
+      response = get_response(path)
+      return_200_response_body(path, response)
+    end
+
+    def return_200_response_body(path, response)
+      if response.code == '200'
+        response.body
+      else
+        raise "HTTP request to #{path} failed.\n" \
+          "Code: #{response.code}\n" \
+          "Body:\n" \
+          "#{response.body}"
       end
     end
 
