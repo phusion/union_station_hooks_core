@@ -92,11 +92,11 @@ Any errors that the UstRouter encounters will be logged. You should read that fi
 
 ### Inspecting dump files
 
-You can also inspect the dump files that the UstRouter writes to. By convention, the tests configure the UstRouter to dump to files in `@tmpdir`.
+You can also inspect the dump files that the UstRouter writes to. By convention, the tests configure the UstRouter to dump to files in `#{@tmpdir}/dump`.
 
-The easiest way to inspect files in `@tmpdir` is by calling `debug_shell` inside tests. By convention, the tests configure the debug shell to be opened inside `@tmpdir`.
+The easiest way to inspect files in the dump directory is by calling `debug_shell` inside tests. By convention, the tests configure the debug shell to be opened inside `@tmpdir`.
 
-The UstRouter dumps each category to its own file. For example, data in belonging to the `requests` category are dumped to `#{@tmpdir}/requests`.
+The UstRouter dumps each category to its own file. For example, data in belonging to the `requests` category are dumped to `#{@tmpdir}/dump/requests`.
 
 Example:
 
@@ -127,12 +127,12 @@ When running the above test, you will see the debug shell:
       #message
     ------ Opening debug shell -----
     You are at /var/folders/98/6tqkjq791_l02r4s2qkq1sfw0000gn/T/d20150830-68695-gntmiy.
-    You can find UstRouter dump files in this directory.
+    You can find UstRouter dump files in 'dump'.
     bash d20150830-68695-gntmiy$
 
 You can for example read one of the dump files:
 
-    bash d20150830-68695-gntmiy$ cat requests
+    bash d20150830-68695-gntmiy$ cat dump/requests
     eaqh9-Gx0LI0BvDKL e6rm4szrty 0 ATTACH
     eaqh9-Gx0LI0BvDKL e6rm4szuhe 1 hello
     eaqh9-Gx0LI0BvDKL e6rm4szuji 2 DETACH

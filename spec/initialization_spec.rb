@@ -65,6 +65,9 @@ describe UnionStationHooks do
 
     result = system('ruby', runner_path)
     if !result
+      if $? && $?.termsig
+        RSpec.world.wants_to_quit = true
+      end
       raise "Error evaluating code:\n#{code}"
     end
 

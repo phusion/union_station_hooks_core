@@ -35,13 +35,15 @@ describe Context do
   TOMORROW  = Time.utc(2010, 4, 11, 13, 56, 02)
 
   before :each do
-    @username = "logging"
-    @password = "1234"
+    @username = 'logging'
+    @password = '1234'
     @tmpdir   = Dir.mktmpdir
-    @socket_filename = "#{@tmpdir}/ust_router.socket"
+    @dump_dir = "#{@tmpdir}/dump"
+    @socket_filename = "#{@dump_dir}/ust_router.socket"
     @socket_address  = "unix:#{@socket_filename}"
-    @context  = Context.new(@socket_address, @username, @password, "localhost")
-    @context2 = Context.new(@socket_address, @username, @password, "localhost")
+    @context  = Context.new(@socket_address, @username, @password, 'localhost')
+    @context2 = Context.new(@socket_address, @username, @password, 'localhost')
+    FileUtils.mkdir(@dump_dir)
   end
 
   after :each do
@@ -54,7 +56,7 @@ describe Context do
   end
 
   def start_agent
-    @agent_pid = spawn_ust_router(@tmpdir, @socket_filename, @password)
+    @agent_pid = spawn_ust_router(@socket_filename, @password)
   end
 
   def kill_agent
@@ -66,22 +68,10 @@ describe Context do
     end
   end
 
-  def dump_file_path(category = "requests")
-    "#{@tmpdir}/#{category}"
-  end
-
-  def read_dump_file(category = "requests")
-    File.read(dump_file_path(category))
-  end
-
-  def silence_warnings
-    UnionStationHooks::Log.warn_callback = lambda { |message| }
-  end
-
   def prepare_debug_shell
     Dir.chdir(@tmpdir)
     puts "You are at #{@tmpdir}."
-    puts "You can find UstRouter dump files in this directory."
+    puts "You can find UstRouter dump files in 'dump'."
   end
 
   describe "#new_transaction" do

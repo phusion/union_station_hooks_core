@@ -33,11 +33,13 @@ module UnionStationHooks
 shared_examples_for 'a RequestReporter' do
   before :each do |example|
     @example_full_description = example.full_description
-    @username = "logging"
-    @password = "1234"
+    @username = 'logging'
+    @password = '1234'
     @tmpdir   = Dir.mktmpdir
-    @socket_filename = "#{@tmpdir}/ust_router.socket"
+    @dump_dir = "#{@tmpdir}/dump"
+    @socket_filename = "#{@dump_dir}/ust_router.socket"
     @socket_address  = "unix:#{@socket_filename}"
+    FileUtils.mkdir(@dump_dir)
   end
 
   after :each do
@@ -47,7 +49,7 @@ shared_examples_for 'a RequestReporter' do
   end
 
   def start_agent
-    @agent_pid = spawn_ust_router(@tmpdir, @socket_filename, @password)
+    @agent_pid = spawn_ust_router(@socket_filename, @password)
   end
 
   def kill_agent
@@ -59,24 +61,10 @@ shared_examples_for 'a RequestReporter' do
     end
   end
 
-  def dump_file_path(category = 'requests')
-    "#{@tmpdir}/#{category}"
-  end
-
-  def read_dump_file(category = 'requests')
-    File.read(dump_file_path(category))
-  end
-
-  def wait_for_dump_file_existance(category = 'requests')
-    eventually do
-      File.exist?(dump_file_path(category))
-    end
-  end
-
   def prepare_debug_shell
     Dir.chdir(@tmpdir)
     puts "You are at #{@tmpdir}."
-    puts "You can find UstRouter dump files in this directory."
+    puts "You can find UstRouter dump files in 'dump'."
   end
 
   def execute(code)
@@ -149,6 +137,9 @@ shared_examples_for 'a RequestReporter' do
 
     result = system("#{ruby_command} #{Shellwords.escape runner_path}")
     if !result
+      if $? && $?.termsig
+        RSpec.world.wants_to_quit = true
+      end
       raise "Error evaluating code with '#{ruby_command}':\n#{code}"
     end
 

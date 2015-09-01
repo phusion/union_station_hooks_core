@@ -63,17 +63,19 @@ module SpecHelper
   # to it to files on the filesystem, instead of sending that data to the Union
   # Station service.
   #
-  # @param [String] tmpdir  A path to a temporary directory. This method will
-  #   use that directory as a scratch area, as well as making the UstRouter
-  #   dump its data to that directory.
+  # This method requires that the `@dump_dir` variable is set. That directory
+  # will be used as a scratch area. In addition, the UstRouter dump files will
+  # be stored there.
+  #
   # @param [String] socket_filename  The filename of the Unix domain socket
   #   that the UstRouter should listen on.
   # @param [String] password  The password that the UstRouter should use for.
   #   authenticating clients. Since we're testing, a simple password like `1234`
   #   will do.
   # @return [Integer] The UstRouter's PID.
-  def spawn_ust_router(tmpdir, socket_filename, password)
-    password_filename = "#{tmpdir}/password"
+  def spawn_ust_router(socket_filename, password)
+    raise '@dump_dir variable required' if !@dump_dir
+    password_filename = "#{@dump_dir}/password"
     write_file(password_filename, password)
     agent = PhusionPassenger.find_support_binary(PhusionPassenger::AGENT_EXE)
     pid = spawn_process(agent,
@@ -81,7 +83,7 @@ module SpecHelper
       '--passenger-root', PhusionPassenger.install_spec,
       '--log-level', debug? ? '6' : '2',
       '--dev-mode',
-      '--dump-dir', tmpdir,
+      '--dump-dir', @dump_dir,
       '--listen', "unix:#{socket_filename}",
       '--password-file', password_filename)
     eventually do

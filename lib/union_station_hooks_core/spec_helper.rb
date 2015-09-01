@@ -155,6 +155,35 @@ module UnionStationHooks
       puts '------ Exiting debug shell -----'
     end
 
+    # Returns the path of a specific UstRouter dump file.
+    # Requires that `@dump_dir` is set.
+    def dump_file_path(category = 'requests')
+      raise '@dump_dir variable required' if !@dump_dir
+      "#{@dump_dir}/#{category}"
+    end
+
+    # Reads the contents of a specific UstRouter dump file.
+    # Requires that `@dump_dir` is set.
+    #
+    # @raise SystemError Something went wrong during reading.
+    def read_dump_file(category = 'requests')
+      File.read(dump_file_path(category))
+    end
+
+    # Waits until the dump file exists. Raises an error if
+    # this doesn't become true within the default {#eventually}
+    # timeout.
+    def wait_for_dump_file_existance(category = 'requests')
+      eventually do
+        File.exist?(dump_file_path(category))
+      end
+    end
+
+    # Makes `UnionStationHooks::Log.warn` not print anything.
+    def silence_warnings
+      UnionStationHooks::Log.warn_callback = lambda { |message| }
+    end
+
     # Asserts that something should eventually happen. This is done by checking
     # that the given block eventually returns true. The block is called
     # once every `check_interval` msec. If the block does not return true
