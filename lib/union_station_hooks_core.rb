@@ -293,6 +293,18 @@ module UnionStationHooks
       nil
     end
 
+    def begin_rack_request(rack_env)
+      # When `initialize!` is called, the definition in
+      # `api.rb` will override this implementation.
+      nil
+    end
+
+    def end_rack_request(rack_env)
+      # When `initialize!` is called, the definition in
+      # `api.rb` will override this implementation.
+      nil
+    end
+
   private
 
     def finalize_and_validate_config

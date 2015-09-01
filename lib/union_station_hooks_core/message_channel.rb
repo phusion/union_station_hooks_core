@@ -102,60 +102,6 @@ module UnionStationHooks
       nil
     end
 
-    # Read a scalar message from the underlying IO object. Returns the
-    # read message, or nil on end-of-stream.
-    #
-    # Might raise SystemCallError, IOError or SocketError when something
-    # goes wrong.
-    #
-    # The +buffer+ argument specifies a buffer in which #read_scalar
-    # stores the read data. It is good practice to reuse existing buffers
-    # in order to minimize stress on the garbage collector.
-    #
-    # The +max_size+ argument allows one to specify the maximum allowed
-    # size for the scalar message. If the received scalar message's size
-    # is larger than +max_size+, then a SecurityError will be raised.
-    def read_scalar(buffer = new_buffer, max_size = nil)
-      if !@io.read(4, buffer)
-        return nil
-      end
-      while buffer.size < 4
-        tmp = @io.read(4 - buffer.size)
-        if tmp.empty?
-          return nil
-        else
-          buffer << tmp
-        end
-      end
-
-      size = buffer.unpack(UINT32_PACK_FORMAT)[0]
-      if size == 0
-        buffer.replace('')
-        return buffer
-      end
-      if !max_size.nil? && size > max_size
-        raise SecurityError, "Scalar message size (#{size}) " \
-          "exceeds maximum allowed size (#{max_size})"
-      end
-      if !@io.read(size, buffer)
-        return nil
-      end
-
-      if buffer.size < size
-        tmp = ''
-        while buffer.size < size
-          if !@io.read(size - buffer.size, tmp)
-            return nil
-          else
-            buffer << tmp
-          end
-        end
-      end
-      buffer
-    rescue Errno::ECONNRESET
-      nil
-    end
-
     # rubocop:enable Metrics/MethodLength, Metrics/CyclomaticComplexity
     # rubocop:enable Metrics/PerceivedComplexity, Metrics/AbcSize
 
@@ -187,22 +133,6 @@ module UnionStationHooks
     def write_scalar(data)
       @io.write([data.size].pack('N') << data)
       @io.flush
-    end
-
-    # Return the file descriptor of the underlying IO object.
-    def fileno
-      @io.fileno
-    end
-
-    # Close the underlying IO stream. Might raise SystemCallError or
-    # IOError when something goes wrong.
-    def close
-      @io.close
-    end
-
-    # Checks whether the underlying IO stream is closed.
-    def closed?
-      @io.closed?
     end
 
   private

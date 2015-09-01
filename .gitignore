@@ -2,4 +2,5 @@
 .yardoc
 *.gem
 /doc
+/coverage
 /ruby_versions.yml

@@ -6,6 +6,7 @@
  * [Development workflow](#development-workflow)
  * [Testing](#testing)
    - [Running the test suite against a specific Passenger version](#running-the-test-suite-against-a-specific-passenger-version)
+   - [Code coverage](#code-coverage)
    - [Writing tests](#writing-tests)
 
 ## Setting up the development environment
@@ -67,6 +68,15 @@ If you have multiple Passenger versions installed, and you want to run the test 
 If you want to run a specific test, then pass the test's name through the `E` environment variable. For example:
 
     bundle exec rake spec E='UnionStationHooks::Transaction#message logs the given message'
+
+### Code coverage
+
+You can run the test suite with code coverage reporting by setting the `COVERAGE=1` environment variable:
+
+    export COVERAGE=1
+    bundle exec rake spec
+
+Afterwards, the coverage report will be available in `coverage/index.html`.
 
 ### Writing tests
 

@@ -120,7 +120,7 @@ describe Context do
 
       connection = @context.instance_variable_get(:"@connection")
       connection.synchronize do
-        connection.channel.close
+        connection.channel.io.close
         connection.channel = nil
       end
 
@@ -189,7 +189,7 @@ describe Context do
 
       connection = @context2.instance_variable_get(:"@connection")
       connection.synchronize do
-        connection.channel.close
+        connection.channel.io.close
         connection.channel = nil
       end
 

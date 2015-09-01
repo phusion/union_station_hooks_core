@@ -44,36 +44,8 @@ describe MessageChannel do
     end
 
     it "properly detects end-of-file when reading an array message" do
-      @writer.close
+      @writer.io.close
       expect(@reader.read).to be_nil
-    end
-
-    it "can read a single written scalar message" do
-      @writer.write_scalar("hello world")
-      expect(@reader.read_scalar).to eq("hello world")
-    end
-
-    it "can handle empty scalar messages" do
-      @writer.write_scalar("")
-      expect(@reader.read_scalar).to eq("")
-    end
-
-    it "properly detects end-of-file when reading a scalar message" do
-      @writer.close
-      expect(@reader.read_scalar).to be_nil
-    end
-
-    it "puts the data into the given buffer" do
-      buffer = ''
-      @writer.write_scalar("x" * 100)
-      result = @reader.read_scalar(buffer)
-      expect(result.object_id).to eq(buffer.object_id)
-      expect(buffer).to eq("x" * 100)
-    end
-
-    it "raises SecurityError when a received scalar message's size is larger than a specified maximum" do
-      @writer.write_scalar(" " * 100)
-      expect { @reader.read_scalar('', 99) }.to raise_error(SecurityError)
     end
   end
 
@@ -110,21 +82,6 @@ describe MessageChannel do
       expect(@channel.read).to eq(["hello!"])
     end
 
-    it "can handle scalar messages with arbitrary binary data" do
-      garbage_files = ["garbage1.dat", "garbage2.dat", "garbage3.dat"]
-      spawn_process do
-        garbage_files.each do |name|
-          data = File.binread("spec/#{name}")
-          @channel.write_scalar(data)
-        end
-      end
-
-      garbage_files.each do |name|
-        data = File.binread("spec/#{name}")
-        expect(@channel.read_scalar).to eq(data)
-      end
-    end
-
     it "supports large amounts of data" do
       iterations = 1000
       blob = "123" * 1024
@@ -136,28 +93,6 @@ describe MessageChannel do
       iterations.times do
         expect(@channel.read).to eq([blob])
       end
-    end
-
-    it "has stream properties" do
-      garbage = File.binread("spec/garbage1.dat")
-      spawn_process do
-        @channel.write("hello", "world")
-        @channel.write_scalar(garbage)
-        @channel.write_scalar(":-)")
-
-        a = @channel.read_scalar
-        b = @channel.read
-        b << a
-        @channel.write(*b)
-      end
-      expect(@channel.read).to eq(["hello", "world"])
-      expect(@channel.read_scalar).to eq(garbage)
-      expect(@channel.read_scalar).to eq(":-)")
-
-      @channel.write_scalar("TASTE MY WRATH! ULTIMATE SWORD TECHNIQUE!! DRAGON'S BREATH SL--")
-      @channel.write("Uhm, watch your step.", "WAAHH?!", "Calm down, Motoko!!")
-      expect(@channel.read).to eq(["Uhm, watch your step.", "WAAHH?!", "Calm down, Motoko!!",
-        "TASTE MY WRATH! ULTIMATE SWORD TECHNIQUE!! DRAGON'S BREATH SL--"])
     end
   end
 end

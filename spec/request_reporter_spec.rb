@@ -26,11 +26,13 @@ require 'tmpdir'
 require 'fileutils'
 require 'yaml'
 require 'base64'
+require 'digest/md5'
 
 module UnionStationHooks
 
 shared_examples_for 'a RequestReporter' do
-  before :each do
+  before :each do |example|
+    @example_full_description = example.full_description
     @username = "logging"
     @password = "1234"
     @tmpdir   = Dir.mktmpdir
@@ -86,6 +88,16 @@ shared_examples_for 'a RequestReporter' do
     runner_path = "#{@tmpdir}/runner.rb"
     runner = %Q{
       require 'yaml'
+      if ENV['COVERAGE']
+        begin
+          require 'simplecov'
+          SimpleCov.command_name('Inline code ' +
+            #{Digest::MD5.hexdigest(@example_full_description).inspect})
+          SimpleCov.start('test')
+        rescue LoadError
+          # Ignore error
+        end
+      end
       require #{main_lib_path.inspect}
 
       UnionStationHooks.config[:union_station_key] = 'any-key'
@@ -122,6 +134,11 @@ shared_examples_for 'a RequestReporter' do
       module UnionStationHooks
         result = eval(File.read(#{code_path.inspect}),
           binding, #{code_path.inspect})
+
+        vars = local_variables
+        if vars.include?(:reporter) || vars.include?('reporter')
+          reporter.close
+        end
 
         File.open(#{result_path.inspect}, 'w') do |f|
           f.write(YAML.dump(result))

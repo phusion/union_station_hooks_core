@@ -21,6 +21,12 @@
 #  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 #  THE SOFTWARE.
 
+if ENV['COVERAGE']
+  require 'simplecov'
+  SimpleCov.command_name('RSpec')
+  SimpleCov.start('test')
+end
+
 ROOT = File.expand_path(File.dirname(File.dirname(__FILE__)))
 require("#{ROOT}/lib/union_station_hooks_core")
 UnionStationHooks.require_lib 'spec_helper'

@@ -122,7 +122,7 @@ module UnionStationHooks
         base64_message = Utils.base64(base64_message)
         base64_backtrace = Utils.base64(exception.backtrace.join("\n"))
 
-        if @controller_action
+        if controller_action_logged?
           transaction.message("Controller action: #{@controller_action}")
         end
         transaction.message("Request transaction ID: #{@txn_id}")

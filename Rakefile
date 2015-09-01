@@ -6,6 +6,7 @@ task :spec do
   if pattern
     args = "-e #{Shellwords.escape(pattern)}"
   end
+  sh 'rm -rf coverage'
   sh "bundle exec rspec -c -f d spec/*_spec.rb #{args}"
 end
 

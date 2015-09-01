@@ -24,9 +24,11 @@
 require File.expand_path(File.dirname(__FILE__) + '/spec_helper')
 require 'tmpdir'
 require 'fileutils'
+require 'digest/md5'
 
 describe UnionStationHooks do
-  before :each do
+  before :each do |example|
+    @example_full_description = example.full_description
     @tmpdir = Dir.mktmpdir
   end
 
@@ -42,6 +44,13 @@ describe UnionStationHooks do
     main_lib_path = "#{UnionStationHooks::LIBROOT}/union_station_hooks_core"
     runner_path = "#{@tmpdir}/runner.rb"
     runner = %Q{
+      if ENV['COVERAGE']
+        require 'simplecov'
+        SimpleCov.command_name('Inline code ' +
+          #{Digest::MD5.hexdigest(@example_full_description).inspect})
+        SimpleCov.start('test')
+      end
+
       require #{main_lib_path.inspect}
       UnionStationHooks.config[:union_station_key] = 'any-key'
       UnionStationHooks.config[:app_group_name] = 'any-app'
@@ -155,6 +164,44 @@ describe UnionStationHooks do
       }
       expect(execute(code)).to eq(
         :foo_initialized => true
+      )
+    end
+  end
+
+  context 'when not initialized' do
+    before :each do
+      @env = { 'PASSENGER_TXN_ID' => '1234' }
+    end
+
+    specify 'UnionStationHooks.begin_rack_request returns nil' do
+      code = %Q{
+        result = UnionStationHooks.begin_rack_request(#{@env.inspect})
+        {
+          :result => result,
+          :reporter_class_defined => !!defined?(UnionStationHooks::RequestReporter)
+        }
+      }
+      expect(execute(code)).to eq(
+        :result => nil,
+        :reporter_class_defined => false
+      )
+    end
+
+    specify 'UnionStationHooks.end_rack_request returns nil' do
+      code = %Q{
+        env = #{@env.inspect}
+        result = UnionStationHooks.begin_rack_request(env)
+        result2 = UnionStationHooks.end_rack_request(env)
+        {
+          :result => result,
+          :result2 => result2,
+          :reporter_class_defined => !!defined?(UnionStationHooks::RequestReporter)
+        }
+      }
+      expect(execute(code)).to eq(
+        :result => nil,
+        :result2 => nil,
+        :reporter_class_defined => false
       )
     end
   end
