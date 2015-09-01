@@ -15,6 +15,14 @@ Before you can start developing `union_station_hooks_core`, you must setup a dev
 
 ### Step 1: install gem bundle
 
+First, ensure that you have at least Bundler 1.10. Check your Bundler version with:
+
+    bundle -v
+
+If it's less than 1.10, install the latest version:
+
+    gem install bundler --no-document
+
 Go to the `union_station_hooks_core` directory, then install the gem bundle:
 
     cd /path-to/union_station_hooks_core

@@ -21,6 +21,11 @@
 #  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 #  THE SOFTWARE.
 
+USH_GEMFILE = ENV['BUNDLE_GEMFILE']
+if !USH_GEMFILE
+  abort 'The test suite must be run in Bundler.'
+end
+
 if ENV['COVERAGE']
   require 'simplecov'
   SimpleCov.command_name('RSpec')

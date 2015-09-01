@@ -43,14 +43,24 @@ describe 'Passenger integration' do
     FileUtils.mkdir("#{@app_dir}/public")
     FileUtils.mkdir("#{@app_dir}/tmp")
     FileUtils.mkdir("#{@app_dir}/log")
+    ENV['BUNDLE_GEMFILE'] = USH_GEMFILE
   end
 
   after :each do
+    ENV.delete('BUNDLE_GEMFILE')
     stop_app
     FileUtils.rm_rf(@tmpdir)
   end
 
+  def install_app
+    write_file("#{@app_dir}/config/setup_load_paths.rb", %Q{
+      # Setup Bundler through $BUNDLE_GEMFILE
+      require 'bundler/setup'
+    })
+  end
+
   def start_app
+    install_app
     Dir.chdir(@app_dir) do
       command = "#{PhusionPassenger.bin_dir}/passenger start " \
         "--address 127.0.0.1 --port #{port} " \
@@ -122,7 +132,6 @@ describe 'Passenger integration' do
     })
 
     start_app
-
     expect(get('/')).to eq("vendored: true\n")
     wait_for_dump_file_existance
     eventually do

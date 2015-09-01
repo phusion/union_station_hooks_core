@@ -11,3 +11,7 @@ group :doc, :notravis do
   gem 'yard'
   gem 'redcarpet'
 end
+
+group :travis do
+  gem 'rack'
+end

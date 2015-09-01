@@ -16,7 +16,7 @@ task :test => :spec
 
 desc 'Run tests in Travis'
 task "spec:travis" do
-  if !File.exist?('passenger')
+  if !File.exist?('passenger/.git')
     sh "git clone --recursive --branch #{TRAVIS_PASSENGER_BRANCH} git://github.com/phusion/passenger.git"
   else
     puts 'cd passenger'
@@ -29,18 +29,20 @@ task "spec:travis" do
     puts 'cd ..'
   end
 
-  passenger_config = './passenger/bin/passenger-config'
+  passenger_config = "#{Dir.pwd}/passenger/bin/passenger-config"
   envs = {
     'PASSENGER_CONFIG' => passenger_config,
     'CC' => 'ccache cc',
     'CXX' => 'ccache c++',
     'CCACHE_COMPRESS' => '1',
-    'CCACHE_COMPRESS_LEVEL' => '3'
+    'CCACHE_COMPRESS_LEVEL' => '3',
+    'CCACHE_DIR' => "#{Dir.pwd}/passenger/.ccache"
   }
   envs.each_pair do |key, val|
     ENV[key] = val
-    puts "$ export #{key}=#{val}"
+    puts "$ export #{key}='#{val}'"
   end
+  sh 'mkdir -p passenger/.ccache'
   sh "#{passenger_config} install-agent --auto"
 
   sh 'cp ruby_versions.yml.travis ruby_versions.yml'
