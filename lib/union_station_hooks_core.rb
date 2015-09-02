@@ -300,13 +300,14 @@ module UnionStationHooks
       nil
     end
 
-    def begin_rack_request(rack_env)
+    def begin_rack_request(_rack_env)
       # When `initialize!` is called, the definition in
       # `api.rb` will override this implementation.
       nil
     end
 
-    def end_rack_request(rack_env)
+    def end_rack_request(_rack_env,
+        _uncaught_exception_raised_during_request = false)
       # When `initialize!` is called, the definition in
       # `api.rb` will override this implementation.
       nil

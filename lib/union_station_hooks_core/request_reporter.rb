@@ -134,7 +134,7 @@ module UnionStationHooks
 
     # Called when one of the methods return early upon detecting null
     # mode. Used by tests to verify that methods return early.
-    def do_nothing_on_null(source)
+    def do_nothing_on_null(_source)
       # Do nothing by default. Tests will stub this.
     end
   end
