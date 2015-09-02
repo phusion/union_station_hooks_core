@@ -1,5 +1,7 @@
 # Union Station Ruby hooks core
 
+[![Build Status](https://travis-ci.org/phusion/union_station_hooks_core.svg?branch=master)](https://travis-ci.org/phusion/union_station_hooks_core)
+
 [Union Station](https://www.unionstationapp.com) is a web application monitoring and performance analytics platform for Ruby. In order for Union Station to analyze your application, your application must send data to Union Station. This gem allows you to do that.
 
 `union_station_hooks_core` is a web-framework-agnostic gem that **hooks into various Ruby internals** in order to send generic Ruby application analytics information to Union Station. Not all information can be automatically inferred by hooking into the Ruby internals, so this gem also provides an **API** that you can call at key places in the codebase to supply the right information.
