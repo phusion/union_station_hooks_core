@@ -126,7 +126,7 @@ describe 'Passenger integration' do
     expect(get('/')).to eq("vendored: true\n")
     wait_for_dump_file_existance
     eventually do
-      expect(read_dump_file).to include(
+      read_dump_file.include?(
         "Controller action: HomeController#index\n")
     end
   end
@@ -158,7 +158,7 @@ describe 'Passenger integration' do
     expect(get('/')).to eq("vendored: false\n")
     wait_for_dump_file_existance
     eventually do
-      expect(read_dump_file).to include(
+      read_dump_file.include?(
         "Controller action: HomeController#index\n")
     end
   end
@@ -201,7 +201,7 @@ describe 'Passenger integration' do
       )
       wait_for_dump_file_existance
       eventually do
-        expect(read_dump_file).to include(
+        read_dump_file.include?(
           "Controller action: HomeController#index\n")
       end
     end
@@ -218,7 +218,7 @@ describe 'Passenger integration' do
         "bar: 5678\n"
       )
       eventually do
-        expect(read_dump_file).to include(
+        read_dump_file.include?(
           "Controller action: HomeController#index\n")
       end
     end
