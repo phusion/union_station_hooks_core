@@ -199,7 +199,7 @@ module UnionStationHooks
     #
     # @param [String] name A unique name for this cache miss event. The cache
     #   key is a good value to use.
-    # @param [Integer] miss_cost_duration The amount of time that was spent in
+    # @param [Numeric] miss_cost_duration The amount of time that was spent in
     #   calculating or processing something, as a result of this cache miss.
     #   This time is in **microseconds**.
     # @note At present (30 September 2015), logged cache hit/miss information
