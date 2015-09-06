@@ -48,7 +48,7 @@ module UnionStationHooks
       value = options[key]
       if value.nil? || value.empty?
         raise ArgumentError, "Option #{key.inspect} is required " \
-          "and must be non-empty"
+          'and must be non-empty'
       else
         value
       end
@@ -109,23 +109,38 @@ module UnionStationHooks
       end
     end
 
-    def process_ust_router_reply(channel)
+    def process_ust_router_reply(channel, error_description,
+                                 error_class = RuntimeError,
+                                 unexpected_error_class = RuntimeError)
       result = channel.read
+      if result.nil?
+        raise unexpected_error_class,
+          "#{error_description}: UstRouter did not send a reply"
+      end
+      process_ust_router_reply_message(result, error_description,
+        error_class, unexpected_error_class)
+      result
+    end
 
-      if result[0] != 'status'
-        raise "Expected UstRouter to respond with 'status', " \
-          "but got #{result.inspect} instead"
+    def process_ust_router_reply_message(message, error_description,
+                                         error_class = RuntimeError,
+                                         unexpected_error_class = RuntimeError)
+      if message[0] != 'status'
+        raise unexpected_error_class,
+          "#{error_description}: expected UstRouter to respond with " \
+          "'status', but got #{message.inspect} instead"
       end
 
-      if result[1] == 'error'
-        if result[2]
-          raise "Unable to close transaction: #{result[2]}"
+      if message[1] == 'error'
+        if message[2]
+          raise error_class, "#{error_description}: #{message[2]}"
         else
-          raise 'Unable to close transaction (no server message given)'
+          raise error_class, "#{error_description} (no server message given)"
         end
-      elsif result[1] != 'ok'
-        raise "Expected UstRouter to respond with 'ok' or 'error', " \
-          "but got #{result.inspect} instead"
+      elsif message[1] != 'ok'
+        raise unexpected_error_class,
+          "#{error_description}: expected UstRouter to respond with " \
+          "'ok' or 'error', but got #{message.inspect} instead"
       end
     end
 

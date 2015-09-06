@@ -82,15 +82,15 @@ module UnionStationHooks
       # See the docs for MUTEX on why we synchronize this.
       GC_MUTEX.synchronize do
         if OBJECT_SPACE_SUPPORTS_LIVE_OBJECTS
-          @transaction.message("Initial objects on heap: " \
+          @transaction.message('Initial objects on heap: ' \
             "#{ObjectSpace.live_objects}")
         end
         if OBJECT_SPACE_SUPPORTS_ALLOCATED_OBJECTS
-          @transaction.message("Initial objects allocated so far: " \
+          @transaction.message('Initial objects allocated so far: ' \
             "#{ObjectSpace.allocated_objects}")
         elsif OBJECT_SPACE_SUPPORTS_COUNT_OBJECTS
           count = ObjectSpace.count_objects
-          @transaction.message("Initial objects allocated so far: " \
+          @transaction.message('Initial objects allocated so far: ' \
             "#{count[:TOTAL] - count[:FREE]}")
         end
         if GC_SUPPORTS_TIME
@@ -106,15 +106,15 @@ module UnionStationHooks
       # See the docs for MUTEX on why we synchronize this.
       GC_MUTEX.synchronize do
         if OBJECT_SPACE_SUPPORTS_LIVE_OBJECTS
-          @transaction.message("Final objects on heap: " \
+          @transaction.message('Final objects on heap: ' \
             "#{ObjectSpace.live_objects}")
         end
         if OBJECT_SPACE_SUPPORTS_ALLOCATED_OBJECTS
-          @transaction.message("Final objects allocated so far: " \
+          @transaction.message('Final objects allocated so far: ' \
             "#{ObjectSpace.allocated_objects}")
         elsif OBJECT_SPACE_SUPPORTS_COUNT_OBJECTS
           count = ObjectSpace.count_objects
-          @transaction.message("Final objects allocated so far: " \
+          @transaction.message('Final objects allocated so far: ' \
             "#{count[:TOTAL] - count[:FREE]}")
         end
         if GC_SUPPORTS_TIME

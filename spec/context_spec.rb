@@ -74,12 +74,16 @@ describe Context do
     puts "You can find UstRouter dump files in 'dump'."
   end
 
-  describe "#new_transaction" do
-    it "returns a Transaction that allows logging" do
+  def new_transaction
+    transaction = @context.new_transaction('foobar', :requests, 'any-key')
+  end
+
+  describe '#new_transaction' do
+    it 'returns a Transaction that allows logging' do
       start_agent
       Timecop.freeze(TODAY)
 
-      transaction = @context.new_transaction("foobar")
+      transaction = new_transaction
       expect(transaction).not_to be_null
       begin
         transaction.message("hello")
@@ -89,10 +93,10 @@ describe Context do
 
       expect(read_dump_file).to match(/hello/)
 
-      transaction = @context.new_transaction("foobar", :processes)
+      transaction = @context.new_transaction('foobar', :processes, 'any-key')
       expect(transaction).not_to be_null
       begin
-        transaction.message("world")
+        transaction.message('world')
       ensure
         transaction.close(true)
       end
@@ -100,21 +104,21 @@ describe Context do
       expect(read_dump_file("processes")).to match(/world/)
     end
 
-    it "reestablishes the connection with the UstRouter when disconnected" do
+    it 'reestablishes the connection with the UstRouter when disconnected' do
       start_agent
       Timecop.freeze(TODAY)
 
-      transaction = @context.new_transaction("foobar")
+      transaction = new_transaction
       expect(transaction).not_to be_null
       transaction.close(true)
 
-      connection = @context.instance_variable_get(:"@connection")
+      connection = @context.instance_variable_get(:'@connection')
       connection.synchronize do
         connection.channel.io.close
         connection.channel = nil
       end
 
-      transaction = @context.new_transaction("foobar")
+      transaction = new_transaction
       expect(transaction).not_to be_null
       begin
         transaction.message("hello")
@@ -125,36 +129,38 @@ describe Context do
       expect(read_dump_file).to match(/hello/)
     end
 
-    it "does not reconnect to the UstRouter for a short period of time if connecting failed" do
+    it 'does not reconnect to the UstRouter for a short ' \
+         'period of time if connecting failed' do
       @context.reconnect_timeout = 60
       @context.max_connect_tries = 1
 
       Timecop.freeze(TODAY)
       silence_warnings
-      expect(@context.new_transaction("foobar")).to be_null
+      expect(new_transaction).to be_null
 
       Timecop.freeze(TODAY + 30)
       start_agent
-      expect(@context.new_transaction("foobar")).to be_null
+      expect(new_transaction).to be_null
 
       Timecop.freeze(TODAY + 61)
-      expect(@context.new_transaction("foobar")).not_to be_null
+      expect(new_transaction).not_to be_null
     end
   end
 
-  describe "#continue_transaction" do
-    it "returns a Transaction that allows logging" do
+  describe '#continue_transaction' do
+    it 'returns a Transaction that allows logging' do
       start_agent
       Timecop.freeze(TODAY)
 
-      transaction = @context.new_transaction("foobar", :processes)
+      transaction = @context.new_transaction('foobar', :processes, 'any-key')
       begin
-        transaction.message("hello")
-        transaction2 = @context2.continue_transaction(transaction.txn_id, "foobar", :processes)
+        transaction.message('hello')
+        transaction2 = @context2.continue_transaction(transaction.txn_id,
+          'foobar', :processes, 'any-key')
         expect(transaction2).not_to be_null
         expect(transaction2.txn_id).to eq(transaction.txn_id)
         begin
-          transaction2.message("world")
+          transaction2.message('world')
         ensure
           transaction2.close(true)
         end
@@ -162,31 +168,35 @@ describe Context do
         transaction.close(true)
       end
 
-      expect(read_dump_file("processes")).to match(/#{Regexp.escape transaction.txn_id} .* hello$/)
-      expect(read_dump_file("processes")).to match(/#{Regexp.escape transaction.txn_id} .* world$/)
+      expect(read_dump_file('processes')).to \
+        match(/#{Regexp.escape transaction.txn_id} .* hello$/)
+      expect(read_dump_file('processes')).to \
+        match(/#{Regexp.escape transaction.txn_id} .* world$/)
     end
 
-    it "reestablishes the connection with the UstRouter when disconnected" do
+    it 'reestablishes the connection with the UstRouter when disconnected' do
       start_agent
       Timecop.freeze(TODAY)
 
-      transaction = @context.new_transaction("foobar")
+      transaction = new_transaction
       expect(transaction).not_to be_null
       transaction.close(true)
-      transaction2 = @context2.continue_transaction(transaction.txn_id, "foobar")
+      transaction2 = @context2.continue_transaction(transaction.txn_id,
+        'foobar', :requests, 'any-key')
       expect(transaction2).not_to be_null
       transaction2.close(true)
 
-      connection = @context2.instance_variable_get(:"@connection")
+      connection = @context2.instance_variable_get(:'@connection')
       connection.synchronize do
         connection.channel.io.close
         connection.channel = nil
       end
 
-      transaction2 = @context2.continue_transaction(transaction.txn_id, "foobar")
+      transaction2 = @context2.continue_transaction(transaction.txn_id,
+        'foobar', :requests, 'any-key')
       expect(transaction2).not_to be_null
       begin
-        transaction2.message("hello")
+        transaction2.message('hello')
       ensure
         transaction2.close(true)
       end
@@ -194,7 +204,8 @@ describe Context do
       expect(read_dump_file).to match(/hello/)
     end
 
-    it "does not reconnect to the UstRouter for a short period of time if connecting failed" do
+    it 'does not reconnect to the UstRouter for a short period of time ' \
+         'if connecting failed' do
       start_agent
       @context.reconnect_timeout = 60
       @context.max_connect_tries = 1
@@ -202,46 +213,55 @@ describe Context do
       @context2.max_connect_tries = 1
 
       Timecop.freeze(TODAY)
-      transaction = @context.new_transaction("foobar")
+      transaction = new_transaction
       expect(transaction).not_to be_null
-      expect(@context2.continue_transaction(transaction.txn_id, "foobar")).not_to be_null
+      expect(@context2.continue_transaction(transaction.txn_id,
+        'foobar', :requests, 'any-key')).not_to be_null
       kill_agent
       silence_warnings
-      expect(@context2.continue_transaction(transaction.txn_id, "foobar")).to be_null
+      expect(@context2.continue_transaction(transaction.txn_id,
+        'foobar', :requests, 'any-key')).to be_null
 
       Timecop.freeze(TODAY + 30)
       start_agent
-      expect(@context2.continue_transaction(transaction.txn_id, "foobar")).to be_null
+      expect(@context2.continue_transaction(transaction.txn_id,
+        'foobar', :requests, 'any-key')).to be_null
 
       Timecop.freeze(TODAY + 61)
-      expect(@context2.continue_transaction(transaction.txn_id, "foobar")).not_to be_null
+      expect(@context2.continue_transaction(transaction.txn_id,
+        'foobar', :requests, 'any-key')).not_to be_null
     end
   end
 
-  specify "#new_transaction and #continue_transaction eventually reestablish the connection to the UstRouter if the UstRouter crashed and was restarted" do
+  specify '#new_transaction and #continue_transaction eventually ' \
+            'reestablish the connection to the UstRouter if the ' \
+            'UstRouter crashed and was restarted' do
     start_agent
     Timecop.freeze(TODAY)
 
-    transaction = @context.new_transaction("foobar")
+    transaction = new_transaction
     expect(transaction).not_to be_null
-    @context2.continue_transaction(transaction.txn_id, "foobar").close
+    @context2.continue_transaction(transaction.txn_id,
+      'foobar', :requests, 'any-key').close
     kill_agent
     silence_warnings
     start_agent
 
-    transaction = @context.new_transaction("foobar")
+    transaction = new_transaction
     expect(transaction).to be_null
-    transaction2 = @context2.continue_transaction("1234-abcd", "foobar")
+    transaction2 = @context2.continue_transaction('1234-abcd',
+      'foobar', :requests, 'any-key')
     expect(transaction2).to be_null
 
     Timecop.freeze(TODAY + 60)
-    transaction = @context.new_transaction("foobar")
+    transaction = new_transaction
     expect(transaction).not_to be_null
-    transaction.message("hello")
-    transaction2 = @context2.continue_transaction(transaction.txn_id, "foobar")
+    transaction.message('hello')
+    transaction2 = @context2.continue_transaction(transaction.txn_id,
+      'foobar', :requests, 'any-key')
     expect(transaction2).not_to be_null
     begin
-      transaction2.message("world")
+      transaction2.message('world')
     ensure
       transaction2.close(true)
     end
@@ -251,20 +271,20 @@ describe Context do
     expect(read_dump_file).to match(/world/)
   end
 
-  it "only creates null Transaction objects if no server address is given" do
+  it 'only creates null Transaction objects if no server address is given' do
     core = Context.new(nil, nil, nil, nil)
     begin
-      expect(core.new_transaction("foobar")).to be_null
+      expect(core.new_transaction('foobar', :requests, 'any-key')).to be_null
     ensure
       core.close
     end
   end
 
-  describe "#clear_connection" do
+  describe '#clear_connection' do
     it "closes the connection" do
       start_agent
 
-      transaction = @context.new_transaction("foobar")
+      transaction = new_transaction
       expect(transaction).not_to be_null
       transaction.close
 

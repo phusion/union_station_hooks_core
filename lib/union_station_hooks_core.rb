@@ -27,11 +27,11 @@ if defined?(UnionStationHooks::VERSION_STRING)
       'alternative version was already loaded and initialized'
   end
   if UnionStationHooks.vendored?
-    # Passenger loaded its vendored Union Station hooks code, but the application
-    # has also included 'union_station_hooks_*' in its Gemfile. We want the
-    # version in the Gemfile to take precedence, so we unload the old version. At
-    # this point, the Union Station hooks aren't installed yet, so removing the
-    # module is enough to unload the old version.
+    # Passenger loaded its vendored Union Station hooks code, but the
+    # application has also included 'union_station_hooks_*' in its Gemfile. We
+    # want the version in the Gemfile to take precedence, so we unload the old
+    # version. At this point, the Union Station hooks aren't installed yet, so
+    # removing the module is enough to unload the old version.
     #
     # See also hacking/Vendoring.md
     config_from_vendored_ush = UnionStationHooks.config
@@ -280,13 +280,15 @@ module UnionStationHooks
         if defined?(::Rails)
           raise 'The Union Station hooks are not initialized. Please ensure ' \
             'that you have an initializer file ' \
-            "`config/initializers/union_station.rb` in which you call this:\n\n" \
+            '`config/initializers/union_station.rb` in which you call ' \
+            "this:\n\n" \
             "  if defined?(UnionStationHooks)\n" \
             "    UnionStationHooks.initialize!\n" \
             '  end'
         else
           raise 'The Union Station hooks are not initialized. Please ensure ' \
-            "that the following code is called during application startup:\n\n" \
+            'that the following code is called during application ' \
+            "startup:\n\n" \
             "  if defined?(UnionStationHooks)\n" \
             "    UnionStationHooks.initialize!\n" \
             '  end'

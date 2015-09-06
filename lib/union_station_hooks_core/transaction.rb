@@ -56,7 +56,7 @@ module UnionStationHooks
           return
         end
 
-        UnionStationHooks::Log.debug("[Union Station log] " \
+        UnionStationHooks::Log.debug('[Union Station log] ' \
           "#{@txn_id} #{Utils.encoded_timestamp} #{text}")
 
         io_operation do
@@ -98,7 +98,6 @@ module UnionStationHooks
       end
     end
 
-    # rubocop:disable Metrics/AbcSize
     def log_activity_end(name, time = UnionStationHooks.now, has_error = false)
       if time.is_a?(TimePoint)
         if has_error
@@ -116,9 +115,9 @@ module UnionStationHooks
         end
       end
     end
-    # rubocop:enable Metrics/AbcSize
 
-    def log_activity(name, begin_time, end_time, extra_info = nil, has_error = false)
+    def log_activity(name, begin_time, end_time, extra_info = nil,
+                     has_error = false)
       log_activity_begin(name, begin_time, extra_info)
       log_activity_end(name, end_time, has_error)
     end
@@ -136,7 +135,8 @@ module UnionStationHooks
             # before it has received this process's openTransaction command.
             @connection.channel.write('closeTransaction', @txn_id,
               Utils.encoded_timestamp, true)
-            Utils.process_ust_router_reply(@connection.channel)
+            Utils.process_ust_router_reply(@connection.channel,
+              "Error handling reply for 'closeTransaction' message")
             if should_flush_to_disk
               flush_to_disk
             end
@@ -158,7 +158,7 @@ module UnionStationHooks
   private
 
     def log_message_to_null(text)
-      UnionStationHooks::Log.debug("[Union Station log to null] " \
+      UnionStationHooks::Log.debug('[Union Station log to null] ' \
         "#{@txn_id} #{Utils.encoded_timestamp} #{text}")
     end
 
@@ -175,7 +175,8 @@ module UnionStationHooks
 
     def flush_to_disk
       @connection.channel.write('flush')
-      Utils.process_ust_router_reply(@connection.channel)
+      Utils.process_ust_router_reply(@connection.channel,
+        "Error handling reply for 'flush' message")
     end
   end
 end

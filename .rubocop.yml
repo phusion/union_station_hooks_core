@@ -28,6 +28,9 @@ Style/NegatedWhile:
 Style/IfUnlessModifier:
   Enabled: false
 
+Style/Lambda:
+  Enabled: false
+
 Style/GuardClause:
   Enabled: false
 

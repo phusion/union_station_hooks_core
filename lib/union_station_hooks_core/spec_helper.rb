@@ -204,7 +204,7 @@ module UnionStationHooks
 
     # Makes `UnionStationHooks::Log.warn` not print anything.
     def silence_warnings
-      UnionStationHooks::Log.warn_callback = lambda { |message| }
+      UnionStationHooks::Log.warn_callback = lambda { |_message| }
     end
 
     # Asserts that something should eventually happen. This is done by checking

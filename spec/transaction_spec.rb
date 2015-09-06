@@ -53,7 +53,7 @@ describe Transaction do
   end
 
   def create_transaction
-    @transaction = @context.new_transaction('foobar')
+    @transaction = @context.new_transaction('foobar', :requests, 'anything')
     expect(@transaction).not_to be_null
   end
 

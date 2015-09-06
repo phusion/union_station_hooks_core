@@ -44,8 +44,11 @@ module UnionStationHooks
   # @private
   class Context
     RETRY_SLEEP = 0.2
-    NETWORK_ERRORS = [Errno::EPIPE, Errno::ECONNREFUSED, Errno::ECONNRESET,
-      Errno::EHOSTUNREACH, Errno::ENETDOWN, Errno::ENETUNREACH, Errno::ETIMEDOUT]
+    NETWORK_ERRORS = [
+      Errno::EPIPE, Errno::ECONNREFUSED, Errno::ECONNRESET,
+      Errno::EHOSTUNREACH, Errno::ENETDOWN, Errno::ENETUNREACH,
+      Errno::ETIMEDOUT
+    ]
 
     include Utils
 
@@ -61,7 +64,7 @@ module UnionStationHooks
       else
         @node_name = `hostname`.strip
       end
-      @random_dev = File.open("/dev/urandom")
+      @random_dev = File.open('/dev/urandom')
 
       # This mutex protects the following instance variables, but
       # not the contents of @connection.
@@ -86,7 +89,7 @@ module UnionStationHooks
     def clear_connection
       @mutex.synchronize do
         @connection.synchronize do
-          @random_dev = File.open("/dev/urandom") if @random_dev.closed?
+          @random_dev = File.open('/dev/urandom') if @random_dev.closed?
           @connection.unref
           @connection = Connection.new(nil)
         end
@@ -103,17 +106,16 @@ module UnionStationHooks
       end
     end
 
-    def new_transaction(group_name, category = :requests, union_station_key = "-")
+    def new_transaction(group_name, category, key)
       if !@server_address
         return Transaction.new(nil, nil)
       elsif !group_name || group_name.empty?
-        raise ArgumentError, "Group name may not be empty"
+        raise ArgumentError, 'Group name may not be empty'
       end
 
-      txn_id = (Time.now.to_i / 60).to_s(36)
-      txn_id << "-#{random_token(11)}"
+      txn_id = create_txn_id
 
-      Lock.new(@mutex).synchronize do |lock|
+      Lock.new(@mutex).synchronize do |_lock|
         if Time.now < @next_reconnect_time
           return Transaction.new(nil, nil)
         end
@@ -126,7 +128,7 @@ module UnionStationHooks
             rescue SystemCallError, IOError
               @connection.disconnect
               UnionStationHooks::Log.warn(
-                "Cannot connect to the UstRouter at #{@server_address}; " +
+                "Cannot connect to the UstRouter at #{@server_address}; " \
                 "retrying in #{@reconnect_timeout} second(s).")
               @next_reconnect_time = Time.now + @reconnect_timeout
               return Transaction.new(nil, nil)
@@ -137,33 +139,35 @@ module UnionStationHooks
           end
 
           begin
-            @connection.channel.write("openTransaction",
-              txn_id, group_name, "", category,
+            @connection.channel.write('openTransaction',
+              txn_id, group_name, '', category,
               Utils.encoded_timestamp,
-              union_station_key,
+              key,
               true,
               true)
             result = @connection.channel.read
-            if result[0] != "status"
-              raise "Expected UstRouter to respond with 'status', but got #{result.inspect} instead"
-            elsif result[1] == "ok"
+            if result[0] != 'status'
+              raise "Expected UstRouter to respond with 'status', " \
+                "but got #{result.inspect} instead"
+            elsif result[1] == 'ok'
               # Do nothing
-            elsif result[1] == "error"
+            elsif result[1] == 'error'
               if result[2]
                 raise "Unable to close transaction: #{result[2]}"
               else
-                raise "Unable to close transaction (no server message given)"
+                raise 'Unable to close transaction (no server message given)'
               end
             else
-              raise "Expected UstRouter to respond with 'ok' or 'error', but got #{result.inspect} instead"
+              raise "Expected UstRouter to respond with 'ok' or 'error', " \
+                "but got #{result.inspect} instead"
             end
 
             return Transaction.new(@connection, txn_id)
           rescue SystemCallError, IOError
             @connection.disconnect
             UnionStationHooks::Log.warn(
-              "The UstRouter at #{@server_address}" <<
-              " closed the connection; will reconnect in " <<
+              "The UstRouter at #{@server_address}" \
+              ' closed the connection; will reconnect in ' \
               "#{@reconnect_timeout} second(s).")
             @next_reconnect_time = Time.now + @reconnect_timeout
             return Transaction.new(nil, nil)
@@ -175,14 +179,14 @@ module UnionStationHooks
       end
     end
 
-    def continue_transaction(txn_id, group_name, category = :requests, union_station_key = "-")
+    def continue_transaction(txn_id, group_name, category, key)
       if !@server_address
         return Transaction.new(nil, nil)
       elsif !txn_id || txn_id.empty?
-        raise ArgumentError, "Transaction ID may not be empty"
+        raise ArgumentError, 'Transaction ID may not be empty'
       end
 
-      Lock.new(@mutex).synchronize do |lock|
+      Lock.new(@mutex).synchronize do |_lock|
         if Time.now < @next_reconnect_time
           return Transaction.new(nil, nil)
         end
@@ -195,7 +199,7 @@ module UnionStationHooks
             rescue SystemCallError, IOError
               @connection.disconnect
               UnionStationHooks::Log.warn(
-                "Cannot connect to the UstRouter at #{@server_address}; " +
+                "Cannot connect to the UstRouter at #{@server_address}; " \
                 "retrying in #{@reconnect_timeout} second(s).")
               @next_reconnect_time = Time.now + @reconnect_timeout
               return Transaction.new(nil, nil)
@@ -206,17 +210,17 @@ module UnionStationHooks
           end
 
           begin
-            @connection.channel.write("openTransaction",
-              txn_id, group_name, "", category,
+            @connection.channel.write('openTransaction',
+              txn_id, group_name, '', category,
               Utils.encoded_timestamp,
-              union_station_key,
+              key,
               true)
             return Transaction.new(@connection, txn_id)
           rescue SystemCallError, IOError
             @connection.disconnect
             UnionStationHooks::Log.warn(
-              "The UstRouter at #{@server_address}" <<
-              " closed the connection; will reconnect in " <<
+              "The UstRouter at #{@server_address}" \
+              ' closed the connection; will reconnect in ' \
               "#{@reconnect_timeout} second(s).")
             @next_reconnect_time = Time.now + @reconnect_timeout
             return Transaction.new(nil, nil)
@@ -229,62 +233,20 @@ module UnionStationHooks
     end
 
   private
-    RANDOM_CHARS = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm',
-      'n', 'o', 'p', 'q', 'r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'z',
-      'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M',
-      'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z',
-      '0', '1', '2', '3', '4', '5', '6', '7', '8', '9']
+
+    RANDOM_CHARS = %w(
+      abcdefghijklmnopqrstuvwxyz
+      ABCDEFGHIJKLMNOPQRSTUVWXYZ
+      0123456789
+    )
 
     def connect
       socket  = connect_to_server(@server_address)
       channel = MessageChannel.new(socket)
 
-      result = channel.read
-      if result.nil?
-        raise EOFError
-      elsif result.size != 2 || result[0] != "version"
-        raise IOError, "The UstRouter didn't sent a valid version identifier"
-      elsif result[1] != "1"
-        raise IOError, "Unsupported UstRouter protocol version #{result[1]}"
-      end
-
-      channel.write_scalar(@username)
-      channel.write_scalar(@password)
-
-      result = channel.read
-      if result.nil?
-        raise EOFError
-      elsif result[0] != "status"
-        raise "Invalid UstRouter authentication response: expected \"status\", got #{result[0].inspect}"
-      elsif result[1] == "ok"
-        # Do nothing
-      elsif result[1] == "error"
-        if result[2]
-          raise SecurityError, "UstRouter authentication error: #{result[2]}"
-        else
-          raise SecurityError, "UstRouter authentication error (no server message given)"
-        end
-      else
-        raise "Invalid UstRouter authentication response: #{result.inspect}"
-      end
-
-      channel.write("init", @node_name)
-      args = channel.read
-      if !args
-        raise Errno::ECONNREFUSED, "Cannot connect to UstRouter"
-      elsif result[0] != "status"
-        raise "Invalid UstRouter client initialization response: expected \"status\", got #{result[0].inspect}"
-      elsif result[1] == "ok"
-        # Do nothing
-      elsif result[1] == "error"
-        if result[2]
-          raise SecurityError, "UstRouter client initialization error: #{result[2]}"
-        else
-          raise SecurityError, "UstRouter client initialization error (no server message given)"
-        end
-      else
-        raise "Invalid UstRouter client initialization response: #{result.inspect}"
-      end
+      handshake_version(channel)
+      handshake_authentication(channel)
+      handshake_initialization(channel)
 
       @connection.unref
       @connection = Connection.new(socket)
@@ -293,12 +255,43 @@ module UnionStationHooks
       raise e
     end
 
+    def handshake_version(channel)
+      result = channel.read
+      if result.nil?
+        raise EOFError
+      elsif result.size != 2 || result[0] != 'version'
+        raise IOError, "The UstRouter didn't sent a valid version identifier"
+      elsif result[1] != '1'
+        raise IOError, "Unsupported UstRouter protocol version #{result[1]}"
+      end
+    end
+
+    def handshake_authentication(channel)
+      channel.write_scalar(@username)
+      channel.write_scalar(@password)
+      process_ust_router_reply(channel,
+        'UstRouter client authentication error',
+        SecurityError)
+    end
+
+    def handshake_initialization(channel)
+      channel.write('init', @node_name)
+      process_ust_router_reply(channel,
+        'UstRouter client initialization error')
+    end
+
     def random_token(length)
-      token = ""
+      token = ''
       @random_dev.read(length).each_byte do |c|
         token << RANDOM_CHARS[c % RANDOM_CHARS.size]
       end
-      return token
+      token
+    end
+
+    def create_txn_id
+      result = (Time.now.to_i / 60).to_s(36)
+      result << "-#{random_token(11)}"
+      result
     end
   end
 end
