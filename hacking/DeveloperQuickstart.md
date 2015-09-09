@@ -28,7 +28,16 @@ Go to the `union_station_hooks_core` directory, then install the gem bundle:
     cd /path-to/union_station_hooks_core
     bundle install
 
-### Step 2: install Passenger
+### Step 2: setup ruby_versions.yml
+
+Parts of the test suite is to be run against multiple Ruby versions. Therefore, it expects a configuration file `ruby_versions.yml` which specifies which Ruby versions are available and how to execute them.
+
+Create a `ruby_versions.yml` from its example template, then modify it as you see fit:
+
+    cp ruby_versions.yml.example ruby_versions.yml
+    editor ruby_versions.yml
+
+### Step 3: install Passenger
 
 During development, the `union_station_hooks_core` unit tests are to be run against a specific Passenger version. If you already have Passenger installed, then you don't have to do anything. But if you do not yet have Passenger, then here is how you can install it:
 
