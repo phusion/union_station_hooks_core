@@ -26,7 +26,7 @@ The debug logs can be a bit overwhelming, so if you enabled debug logs then it's
 
 ## Investigating logged data
 
-As explained in `Architecture.md`, the `union_station_hooks_*` gems make use of a UstRouter process. The gems do not send data to the Union Station service directly, but sends data to the UstRouter process, which in turn is responsible for sending the data to the Union Station service.
+As explained in [Architecture.md](https://github.com/phusion/union_station_hooks_core/blob/master/hacking), the `union_station_hooks_*` gems make use of a UstRouter process. The gems do not send data to the Union Station service directly, but sends data to the UstRouter process, which in turn is responsible for sending the data to the Union Station service.
 
 Thus, when investigating logged data, there are three aspects that you should investigate:
 
