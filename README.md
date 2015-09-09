@@ -72,7 +72,7 @@ When you have this call in place, enable Union Station support in Passenger. Her
 
 ### Overriding Passenger's version
 
-**_Note: Are you using `union_station_hooks_rails`? Then be sure sure to follow the "Overriding Passenger's version" instructions in that gem's README, in addition to following the instructions below._**
+**_Note: Are you using `union_station_hooks_rails`? Read [these instructions](https://github.com/phusion/union_station_hooks_rails#overriding-passengers-version) instead._**
 
 Each version of Passenger bundles its own version of the `union_station_hooks_core` gem. The Passenger maintainers regularly update their bundled version with the latest version. Sometimes, you may wish to use a specific version of `union_station_hooks_core`, overriding the version that came bundled with Passenger. For example, we have may published a new version of `union_station_hooks_core` with some bug fixes, even though Passenger hasn't been updated yet.
 
