@@ -45,16 +45,15 @@ During development, the `union_station_hooks_core` unit tests are to be run agai
 
         git clone git://github.com/phusion/passenger.git
 
- 2. Compile the Passenger UstRouter:
-
-        cd passenger
-        rake nginx
-
- 3. Add this Passenger installation's `bin` directory to your `$PATH`:
+ 2. Add this Passenger installation's `bin` directory to your `$PATH`:
 
         export PATH=/path-to-passenger/bin:$PATH
 
     You also need to add this to your bashrc so that the environment variable persists in new shell sessions.
+
+ 3. Install the Passenger Standalone runtime:
+
+        passenger-config install-standalone-runtime
 
 ## Development workflow
 
