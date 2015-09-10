@@ -39,7 +39,11 @@ Create a `ruby_versions.yml` from its example template, then modify it as you se
 
 ### Step 3: install Passenger
 
-During development, the `union_station_hooks_core` unit tests are to be run against a specific Passenger version. If you already have Passenger installed, then you don't have to do anything. But if you do not yet have Passenger, then here is how you can install it:
+During development, the `union_station_hooks_core` unit tests are to be run against a specific Passenger version.
+
+If this copy of `union_station_hooks_core` is [vendored into Passenger](https://github.com/phusion/union_station_hooks_core/blob/master/hacking/Vendoring.md), then you can skip this step. The test suite will automatically use the containing Passenger installation.
+
+Otherwise, you need to install Passenger unless you have already installed it. Here is how you can install Passenger:
 
  1. Clone the Passenger source code:
 

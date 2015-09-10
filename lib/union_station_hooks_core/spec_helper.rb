@@ -56,12 +56,8 @@ module UnionStationHooks
     def find_passenger_config
       passenger_config = ENV['PASSENGER_CONFIG']
       if passenger_config.nil? || passenger_config.empty?
-        ENV['PATH'].split(':').each do |path|
-          if File.exist?("#{path}/passenger-config")
-            passenger_config = "#{path}/passenger-config"
-            break
-          end
-        end
+        passenger_config = find_passenger_config_vendor ||
+          find_passenger_config_in_path
       end
       if passenger_config.nil? || passenger_config.empty?
         abort 'ERROR: The unit tests are to be run against a specific ' \
@@ -71,6 +67,28 @@ module UnionStationHooks
           'variable to the \'passenger-config\' command.'
       end
       passenger_config
+    end
+
+    # Looks for the passenger-config command in PATH, returning nil
+    # if not found.
+    def find_passenger_config_in_path
+      ENV['PATH'].split(':').each do |path|
+        if File.exist?("#{path}/passenger-config")
+          return "#{path}/passenger-config"
+        end
+      end
+    end
+
+    # Checks whether this union_station_hooks installation is a copy that
+    # is vendored into Passenger, and if so, returns the full path to the
+    # containing Passenger's passenger-config command.
+    def find_passenger_config_vendor
+      path = "#{UnionStationHooks::ROOT}/../../../../../bin/passenger-config"
+      if File.exist?(path)
+        File.expand_path(path)
+      else
+        nil
+      end
     end
 
     # Uses `find_passenger_config` to lookup a Passenger installation, and
