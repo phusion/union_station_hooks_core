@@ -35,6 +35,7 @@ end
 ROOT = File.expand_path(File.dirname(File.dirname(__FILE__)))
 require("#{ROOT}/lib/union_station_hooks_core")
 UnionStationHooks.require_lib 'spec_helper'
+UnionStationHooks.require_lib 'utils'
 UnionStationHooks::SpecHelper.initialize!
 
 require 'yaml'
@@ -101,6 +102,10 @@ module SpecHelper
       Process.waitpid(pid)
     end
     raise e
+  end
+
+  def base64(data)
+    UnionStationHooks::Utils.base64(data)
   end
 end
 

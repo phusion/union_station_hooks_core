@@ -232,4 +232,32 @@ describe 'Passenger integration' do
       end
     end
   end
+
+  it 'logs uncaught exceptions during requests' do
+    write_file("#{@app_dir}/config.ru", %Q{
+      load #{main_lib_path.inspect}
+
+      if defined?(UnionStationHooks)
+        UnionStationHooks.initialize!
+      end
+
+      app = lambda do |env|
+        raise 'something went wrong'
+      end
+
+      run app
+    })
+
+    start_app
+    response = get_response('/')
+    expect(response.code).to eq('502')
+    wait_for_dump_file_existance('exceptions')
+    eventually do
+      data = read_dump_file('exceptions')
+      data.include?('Request transaction ID:') &&
+        data.include?('Message: ' + base64('something went wrong') + "\n") &&
+        data.include?("Class: RuntimeError\n") &&
+        data.include?('Backtrace: ')
+    end
+  end
 end
