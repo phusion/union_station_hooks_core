@@ -277,6 +277,8 @@ module UnionStationHooks
     # @raise RuntimeError
     def check_initialized
       if should_initialize? && !initialized?
+        return if !config.fetch(:check_initialized, true)
+
         if defined?(::Rails)
           raise 'The Union Station hooks are not initialized. Please ensure ' \
             'that you have an initializer file ' \

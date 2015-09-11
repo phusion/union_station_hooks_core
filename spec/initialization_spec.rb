@@ -181,6 +181,19 @@ describe UnionStationHooks do
         :foo_initialized => true
       )
     end
+
+    specify 'UnionStationHooks.check_initialized does not raise an error' do
+      code = %Q{
+        UnionStationHooks.initialize!
+        begin
+          UnionStationHooks.check_initialized
+          nil
+        rescue RuntimeError => e
+          e.message
+        end
+      }
+      expect(execute(code)).to eq(nil)
+    end
   end
 
   context 'when not initialized' do
@@ -218,6 +231,32 @@ describe UnionStationHooks do
         :result2 => nil,
         :reporter_class_defined => false
       )
+    end
+
+    specify 'UnionStationHooks.check_initialized raises an error' do
+      code = %Q{
+        begin
+          UnionStationHooks.check_initialized
+          nil
+        rescue RuntimeError => e
+          e.message
+        end
+      }
+      expect(execute(code)).to match(/The Union Station hooks are not initialized/)
+    end
+
+    specify 'UnionStationHooks.check_initialized does not raise an error ' \
+            'if :check_initialized is false' do
+      code = %Q{
+        UnionStationHooks.config[:check_initialized] = false
+        begin
+          UnionStationHooks.check_initialized
+          nil
+        rescue RuntimeError => e
+          e.message
+        end
+      }
+      expect(execute(code)).to eq(nil)
     end
   end
 
