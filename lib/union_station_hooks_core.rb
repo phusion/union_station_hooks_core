@@ -279,6 +279,9 @@ module UnionStationHooks
       if should_initialize? && !initialized?
         return if !config.fetch(:check_initialized, true)
 
+        # We end each error message with two newlines so that in Passenger
+        # error reports in the exception class is shown on a new line, after
+        # the message.
         if defined?(::Rails)
           raise 'The Union Station hooks are not initialized. Please ensure ' \
             'that you have an initializer file ' \
@@ -286,14 +289,14 @@ module UnionStationHooks
             "this:\n\n" \
             "  if defined?(UnionStationHooks)\n" \
             "    UnionStationHooks.initialize!\n" \
-            '  end'
+            "  end\n\n"
         else
           raise 'The Union Station hooks are not initialized. Please ensure ' \
             'that the following code is called during application ' \
             "startup:\n\n" \
             "  if defined?(UnionStationHooks)\n" \
             "    UnionStationHooks.initialize!\n" \
-            '  end'
+            "  end\n\n"
         end
       end
     end
