@@ -72,13 +72,13 @@ You can query the UstRouter's status with:
 
 This will print a JSON document representing the status. The following keys are especially interesting.
 
- * `remote_sender.available_servers`: An array of Union Station gateway host names that the UstRouter will send to. The UstRouter determines this by:
+ * `remote_sender.up_servers` and `remote_sender.down_servers`: An array of Union Station gateway host names that the UstRouter will or will not send to, respectively. The UstRouter determines this by:
    
     1. Resolving the host name of the gateway,
     2. Pinging the server at each resolved IP address (through a `GET /ping` request),
-    3. Adding to the array the IP address of each server that responds successfully to the ping.
+    3. Adding information about the server to either the `up_servers` or the `down_servers` array, depending on whether the server responded successfully to the ping.
 
-   This array might be briefly empty during startup, but should eventually become non-empty. If it stays empty for a while, then it either means that there is a DNS resolution error, or that none of the servers at the resolved IP addresses responded to pings.
+   These arrays might be briefly empty during startup. One of them should eventually become non-empty. If both of them stay empty for a while, then it probably means that there was a DNS resolution error.
  * `remote_sender.packets_sent_to_gateway`: The number of packets successfully sent to the Union Station service so far. This should become non-zero after a while.
  * `remote_sender.packets_dropped`: The number of packets dropped. A packet can be dropped if no servers are available, when I/O errors are encountered or when the UstRouter cannot send packets to the Union Station gateway quickly enough. If this value is non-zero, then there is trouble.
  * `remote_sender.queue_size`: Sending a packet to the Union Station service does not succeed instantly; it takes some time. The UstRouter does not stop accepting data while it is busy sending a packet. Instead, it schedules the packet to be sent, by adding the packet to a queue. After this act, the UstRouter continues to accept data. A background thread sends out packets in the queue as quickly as possible.
