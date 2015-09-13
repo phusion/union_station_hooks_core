@@ -78,12 +78,13 @@ This will print a JSON document representing the status. The following keys are 
     2. Pinging the server at each resolved IP address (through a `GET /ping` request),
     3. Adding information about the server to either the `up_servers` or the `down_servers` array, depending on whether the server responded successfully to the ping.
 
-   These arrays might be briefly empty during startup. One of them should eventually become non-empty. If both of them stay empty for a while, then it probably means that there was a DNS resolution error.
+   These arrays might be briefly empty during startup. One of them should eventually become non-empty. If both of them stay empty for a while, then it probably means that there was a DNS resolution error. See `remote_sender.last_dns_error_message`.
  * `remote_sender.packets_sent_to_gateway`: The number of packets successfully sent to the Union Station service so far. This should become non-zero after a while.
  * `remote_sender.packets_dropped`: The number of packets dropped. A packet can be dropped if no servers are available, when I/O errors are encountered or when the UstRouter cannot send packets to the Union Station gateway quickly enough. If this value is non-zero, then there is trouble.
  * `remote_sender.queue_size`: Sending a packet to the Union Station service does not succeed instantly; it takes some time. The UstRouter does not stop accepting data while it is busy sending a packet. Instead, it schedules the packet to be sent, by adding the packet to a queue. After this act, the UstRouter continues to accept data. A background thread sends out packets in the queue as quickly as possible.
 
    The queue's maximum size is 1024 packets. If packets are appended to this queue faster than the background thread can send out packets, then this queue eventually becomes full. Any packets that cannot be appended to the queue are dropped. If you see a large queue size that is near 1024, then that is a bad sign.
+ * `remote_sender.last_dns_error_message`: If during the last server checkup a DNS resolution error occurred, then the error message appears here.
  * `transactions`: A map of transactions that haven't finished yet. The data associated with these transactions aren't scheduled for sending until the transaction has finished.
 
 Any errors that the UstRouter encounters will be logged. You should read that file in order to analyze any issues you encounter. You can find the location of the UstRouter log file with:
