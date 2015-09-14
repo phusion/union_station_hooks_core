@@ -71,6 +71,8 @@ module UnionStationHooks
       reporter = RequestReporter.new(context, txn_id, app_group_name, key)
       return if reporter.null?
 
+      IOLogging.initialize_for_current_thread
+
       rack_env['union_station_hooks'] = reporter
       Thread.current[:union_station_hooks] = reporter
       reporter.log_request_begin
@@ -101,6 +103,7 @@ module UnionStationHooks
         uncaught_exception_raised_during_request = false)
       reporter = rack_env.delete('union_station_hooks')
       Thread.current[:union_station_hooks] = nil
+
       if reporter
         begin
           reporter.log_gc_stats_on_request_end
@@ -109,6 +112,8 @@ module UnionStationHooks
           reporter.close
         end
       end
+
+      IOLogging.shutdown_for_current_thread
     end
 
     # Returns an opaque object (a {TimePoint}) that represents a collection

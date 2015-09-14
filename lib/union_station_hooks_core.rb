@@ -162,6 +162,7 @@ module UnionStationHooks
 
       finalize_and_validate_config
       require_lib('api')
+      require_lib('io_logging/initialize')
       create_context
       install_event_pre_hook
       initialize_other_union_station_hooks_gems
@@ -358,6 +359,7 @@ module UnionStationHooks
 end
 
 UnionStationHooks.require_lib('version')
+UnionStationHooks.require_lib('io_logging/skeleton')
 
 if config_from_vendored_ush
   UnionStationHooks.config.replace(config_from_vendored_ush)

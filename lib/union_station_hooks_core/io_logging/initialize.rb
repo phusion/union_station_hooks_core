@@ -1,5 +1,5 @@
 #  Union Station - https://www.unionstationapp.com/
-#  Copyright (c) 2010-2015 Phusion Holding B.V.
+#  Copyright (c) 2015 Phusion Holding B.V.
 #
 #  "Union Station" and "Passenger" are trademarks of Phusion Holding B.V.
 #
@@ -21,50 +21,5 @@
 #  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 #  THE SOFTWARE.
 
-
-module UnionStationHooks
-  # Provides methods for `union_station_*` gems to log internal warnings and
-  # debugging messages. This module is *not* to be used by application
-  # developers for the purpose of logging information to Union Station.
-  #
-  # @private
-  module Log
-    @@debugging = false
-    @@warn_callback = nil
-    @@debug_callback = nil
-
-    def self.debugging=(value)
-      @@debugging = value
-    end
-
-    def self.warn(message)
-      if @@warn_callback
-        @@warn_callback.call(message)
-      else
-        UnionStationHooks::IOLogging.disable do
-          STDERR.puts("[UnionStationHooks] #{message}")
-        end
-      end
-    end
-
-    def self.debug(message)
-      if @@debugging
-        if @@debug_callback
-          @@debug_callback.call(message)
-        else
-          UnionStationHooks::IOLogging.disable do
-            STDERR.puts("[UnionStationHooks] #{message}")
-          end
-        end
-      end
-    end
-
-    def self.warn_callback=(cb)
-      @@warn_callback = cb
-    end
-
-    def self.debug_callback=(cb)
-      @@debug_callback = cb
-    end
-  end
-end
+UnionStationHooks.require_lib 'io_logging/api'
+UnionStationHooks.require_lib 'io_logging/hooks'

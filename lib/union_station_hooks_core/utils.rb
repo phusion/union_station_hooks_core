@@ -89,6 +89,13 @@ module UnionStationHooks
       end
     end
 
+    def normalize_method_name(name)
+      name = name.to_s.gsub('?', '_q')
+      name.gsub!('!', '_p')
+      name.gsub!('<', '_lt')
+      name
+    end
+
     def encoded_timestamp(time = Time.now)
       timestamp = time.to_i * 1_000_000 + time.usec
       timestamp.to_s(36)

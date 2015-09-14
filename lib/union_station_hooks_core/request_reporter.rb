@@ -24,6 +24,7 @@
 UnionStationHooks.require_lib 'request_reporter/basics'
 UnionStationHooks.require_lib 'request_reporter/controllers'
 UnionStationHooks.require_lib 'request_reporter/view_rendering'
+UnionStationHooks.require_lib 'request_reporter/io'
 UnionStationHooks.require_lib 'request_reporter/misc'
 
 module UnionStationHooks
@@ -112,6 +113,7 @@ module UnionStationHooks
       @key = key
       @transaction = continue_transaction
       @next_view_rendering_number = 1
+      @next_io_number = 1
       @next_user_activity_number = 1
       @next_database_query_number = 1
     end

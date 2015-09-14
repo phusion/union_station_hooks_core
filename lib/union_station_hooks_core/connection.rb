@@ -43,7 +43,9 @@ module UnionStationHooks
     end
 
     def disconnect
-      @channel.io.close if @channel
+      UnionStationHooks::IOLogging.disable do
+        @channel.io.close if @channel
+      end
       @channel = nil
     end
 

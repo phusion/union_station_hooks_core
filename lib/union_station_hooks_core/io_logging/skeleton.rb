@@ -1,5 +1,5 @@
 #  Union Station - https://www.unionstationapp.com/
-#  Copyright (c) 2010-2015 Phusion Holding B.V.
+#  Copyright (c) 2015 Phusion Holding B.V.
 #
 #  "Union Station" and "Passenger" are trademarks of Phusion Holding B.V.
 #
@@ -21,50 +21,26 @@
 #  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 #  THE SOFTWARE.
 
+UnionStationHooks.require_lib 'log'
+
+# When `UnionStationHooks.initialize!` is called, the definition in
+# `io_logging/api.rb` will override the following implementations.
+
 
 module UnionStationHooks
-  # Provides methods for `union_station_*` gems to log internal warnings and
-  # debugging messages. This module is *not* to be used by application
-  # developers for the purpose of logging information to Union Station.
-  #
-  # @private
-  module Log
-    @@debugging = false
-    @@warn_callback = nil
-    @@debug_callback = nil
-
-    def self.debugging=(value)
-      @@debugging = value
-    end
-
-    def self.warn(message)
-      if @@warn_callback
-        @@warn_callback.call(message)
-      else
-        UnionStationHooks::IOLogging.disable do
-          STDERR.puts("[UnionStationHooks] #{message}")
-        end
+  class IOLogging
+    class << self
+      def initialize_for_current_thread
+        nil
       end
-    end
 
-    def self.debug(message)
-      if @@debugging
-        if @@debug_callback
-          @@debug_callback.call(message)
-        else
-          UnionStationHooks::IOLogging.disable do
-            STDERR.puts("[UnionStationHooks] #{message}")
-          end
-        end
+      def shutdown_for_current_thread
+        nil
       end
-    end
 
-    def self.warn_callback=(cb)
-      @@warn_callback = cb
-    end
-
-    def self.debug_callback=(cb)
-      @@debug_callback = cb
+      def disable
+        yield
+      end
     end
   end
 end

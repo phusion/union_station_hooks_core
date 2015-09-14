@@ -170,6 +170,8 @@ module SpecHelper
           $reporter.close
         end
 
+        UnionStationHooks::IOLogging.shutdown_for_current_thread
+
         File.open(#{result_path.inspect}, 'w') do |f|
           f.write(YAML.dump(result))
         end

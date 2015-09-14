@@ -56,28 +56,30 @@ module UnionStationHooks
     attr_accessor :reconnect_timeout
 
     def initialize(ust_router_address, username, password, node_name)
-      @server_address = ust_router_address
-      @username = username
-      @password = password
-      if node_name && !node_name.empty?
-        @node_name = node_name
-      else
-        @node_name = `hostname`.strip
-      end
-      @random_dev = File.open('/dev/urandom')
+      UnionStationHooks::IOLogging.disable do
+        @server_address = ust_router_address
+        @username = username
+        @password = password
+        if node_name && !node_name.empty?
+          @node_name = node_name
+        else
+          @node_name = `hostname`.strip
+        end
+        @random_dev = File.open('/dev/urandom')
 
-      # This mutex protects the following instance variables, but
-      # not the contents of @connection.
-      @mutex = Mutex.new
+        # This mutex protects the following instance variables, but
+        # not the contents of @connection.
+        @mutex = Mutex.new
 
-      @connection = Connection.new(nil)
-      if @server_address && local_socket_address?(@server_address)
-        @max_connect_tries = 10
-      else
-        @max_connect_tries = 1
+        @connection = Connection.new(nil)
+        if @server_address && local_socket_address?(@server_address)
+          @max_connect_tries = 10
+        else
+          @max_connect_tries = 1
+        end
+        @reconnect_timeout = 1
+        @next_reconnect_time = Time.utc(1980, 1, 1)
       end
-      @reconnect_timeout = 1
-      @next_reconnect_time = Time.utc(1980, 1, 1)
     end
 
     def connection
@@ -89,9 +91,11 @@ module UnionStationHooks
     def clear_connection
       @mutex.synchronize do
         @connection.synchronize do
-          @random_dev = File.open('/dev/urandom') if @random_dev.closed?
-          @connection.unref
-          @connection = Connection.new(nil)
+          UnionStationHooks::IOLogging.disable do
+            @random_dev = File.open('/dev/urandom') if @random_dev.closed?
+            @connection.unref
+            @connection = Connection.new(nil)
+          end
         end
       end
     end
@@ -99,9 +103,11 @@ module UnionStationHooks
     def close
       @mutex.synchronize do
         @connection.synchronize do
-          @random_dev.close
-          @connection.unref
-          @connection = nil
+          UnionStationHooks::IOLogging.disable do
+            @random_dev.close
+            @connection.unref
+            @connection = nil
+          end
         end
       end
     end
@@ -113,67 +119,69 @@ module UnionStationHooks
         raise ArgumentError, 'Group name may not be empty'
       end
 
-      txn_id = create_txn_id
+      UnionStationHooks::IOLogging.disable do
+        txn_id = create_txn_id
 
-      Lock.new(@mutex).synchronize do |_lock|
-        if Time.now < @next_reconnect_time
-          return Transaction.new(nil, nil)
-        end
+        Lock.new(@mutex).synchronize do |_lock|
+          if Time.now < @next_reconnect_time
+            return Transaction.new(nil, nil)
+          end
 
-        Lock.new(@connection.mutex).synchronize do |connection_lock|
-          if !@connection.connected?
+          Lock.new(@connection.mutex).synchronize do |connection_lock|
+            if !@connection.connected?
+              begin
+                connect
+                connection_lock.reset(@connection.mutex)
+              rescue SystemCallError, IOError
+                @connection.disconnect
+                UnionStationHooks::Log.warn(
+                  "Cannot connect to the UstRouter at #{@server_address}; " \
+                  "retrying in #{@reconnect_timeout} second(s).")
+                @next_reconnect_time = Time.now + @reconnect_timeout
+                return Transaction.new(nil, nil)
+              rescue Exception => e
+                @connection.disconnect
+                raise e
+              end
+            end
+
             begin
-              connect
-              connection_lock.reset(@connection.mutex)
+              @connection.channel.write('openTransaction',
+                txn_id, group_name, '', category,
+                Utils.encoded_timestamp,
+                key,
+                true,
+                true)
+              result = @connection.channel.read
+              if result[0] != 'status'
+                raise "Expected UstRouter to respond with 'status', " \
+                  "but got #{result.inspect} instead"
+              elsif result[1] == 'ok'
+                # Do nothing
+              elsif result[1] == 'error'
+                if result[2]
+                  raise "Unable to close transaction: #{result[2]}"
+                else
+                  raise 'Unable to close transaction (no server message given)'
+                end
+              else
+                raise "Expected UstRouter to respond with 'ok' or 'error', " \
+                  "but got #{result.inspect} instead"
+              end
+
+              return Transaction.new(@connection, txn_id)
             rescue SystemCallError, IOError
               @connection.disconnect
               UnionStationHooks::Log.warn(
-                "Cannot connect to the UstRouter at #{@server_address}; " \
-                "retrying in #{@reconnect_timeout} second(s).")
+                "The UstRouter at #{@server_address}" \
+                ' closed the connection; will reconnect in ' \
+                "#{@reconnect_timeout} second(s).")
               @next_reconnect_time = Time.now + @reconnect_timeout
               return Transaction.new(nil, nil)
             rescue Exception => e
               @connection.disconnect
               raise e
             end
-          end
-
-          begin
-            @connection.channel.write('openTransaction',
-              txn_id, group_name, '', category,
-              Utils.encoded_timestamp,
-              key,
-              true,
-              true)
-            result = @connection.channel.read
-            if result[0] != 'status'
-              raise "Expected UstRouter to respond with 'status', " \
-                "but got #{result.inspect} instead"
-            elsif result[1] == 'ok'
-              # Do nothing
-            elsif result[1] == 'error'
-              if result[2]
-                raise "Unable to close transaction: #{result[2]}"
-              else
-                raise 'Unable to close transaction (no server message given)'
-              end
-            else
-              raise "Expected UstRouter to respond with 'ok' or 'error', " \
-                "but got #{result.inspect} instead"
-            end
-
-            return Transaction.new(@connection, txn_id)
-          rescue SystemCallError, IOError
-            @connection.disconnect
-            UnionStationHooks::Log.warn(
-              "The UstRouter at #{@server_address}" \
-              ' closed the connection; will reconnect in ' \
-              "#{@reconnect_timeout} second(s).")
-            @next_reconnect_time = Time.now + @reconnect_timeout
-            return Transaction.new(nil, nil)
-          rescue Exception => e
-            @connection.disconnect
-            raise e
           end
         end
       end
@@ -186,47 +194,49 @@ module UnionStationHooks
         raise ArgumentError, 'Transaction ID may not be empty'
       end
 
-      Lock.new(@mutex).synchronize do |_lock|
-        if Time.now < @next_reconnect_time
-          return Transaction.new(nil, nil)
-        end
+      UnionStationHooks::IOLogging.disable do
+        Lock.new(@mutex).synchronize do |_lock|
+          if Time.now < @next_reconnect_time
+            return Transaction.new(nil, nil)
+          end
 
-        Lock.new(@connection.mutex).synchronize do |connection_lock|
-          if !@connection.connected?
+          Lock.new(@connection.mutex).synchronize do |connection_lock|
+            if !@connection.connected?
+              begin
+                connect
+                connection_lock.reset(@connection.mutex)
+              rescue SystemCallError, IOError
+                @connection.disconnect
+                UnionStationHooks::Log.warn(
+                  "Cannot connect to the UstRouter at #{@server_address}; " \
+                  "retrying in #{@reconnect_timeout} second(s).")
+                @next_reconnect_time = Time.now + @reconnect_timeout
+                return Transaction.new(nil, nil)
+              rescue Exception => e
+                @connection.disconnect
+                raise e
+              end
+            end
+
             begin
-              connect
-              connection_lock.reset(@connection.mutex)
+              @connection.channel.write('openTransaction',
+                txn_id, group_name, '', category,
+                Utils.encoded_timestamp,
+                key,
+                true)
+              return Transaction.new(@connection, txn_id)
             rescue SystemCallError, IOError
               @connection.disconnect
               UnionStationHooks::Log.warn(
-                "Cannot connect to the UstRouter at #{@server_address}; " \
-                "retrying in #{@reconnect_timeout} second(s).")
+                "The UstRouter at #{@server_address}" \
+                ' closed the connection; will reconnect in ' \
+                "#{@reconnect_timeout} second(s).")
               @next_reconnect_time = Time.now + @reconnect_timeout
               return Transaction.new(nil, nil)
             rescue Exception => e
               @connection.disconnect
               raise e
             end
-          end
-
-          begin
-            @connection.channel.write('openTransaction',
-              txn_id, group_name, '', category,
-              Utils.encoded_timestamp,
-              key,
-              true)
-            return Transaction.new(@connection, txn_id)
-          rescue SystemCallError, IOError
-            @connection.disconnect
-            UnionStationHooks::Log.warn(
-              "The UstRouter at #{@server_address}" \
-              ' closed the connection; will reconnect in ' \
-              "#{@reconnect_timeout} second(s).")
-            @next_reconnect_time = Time.now + @reconnect_timeout
-            return Transaction.new(nil, nil)
-          rescue Exception => e
-            @connection.disconnect
-            raise e
           end
         end
       end

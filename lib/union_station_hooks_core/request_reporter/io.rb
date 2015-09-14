@@ -21,50 +21,25 @@
 #  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 #  THE SOFTWARE.
 
-
 module UnionStationHooks
-  # Provides methods for `union_station_*` gems to log internal warnings and
-  # debugging messages. This module is *not* to be used by application
-  # developers for the purpose of logging information to Union Station.
-  #
-  # @private
-  module Log
-    @@debugging = false
-    @@warn_callback = nil
-    @@debug_callback = nil
-
-    def self.debugging=(value)
-      @@debugging = value
+  class RequestReporter
+    def log_io_begin(name)
+      return do_nothing_on_null(:log_io_begin) if null?
+      id = next_io_name
+      @transaction.log_activity_begin(id, UnionStationHooks.now, name)
+      id
     end
 
-    def self.warn(message)
-      if @@warn_callback
-        @@warn_callback.call(message)
-      else
-        UnionStationHooks::IOLogging.disable do
-          STDERR.puts("[UnionStationHooks] #{message}")
-        end
-      end
+    def log_io_end(id, has_error = false)
+      return do_nothing_on_null(:log_io_end) if null?
+      @transaction.log_activity_end(id, UnionStationHooks.now, has_error)
     end
 
-    def self.debug(message)
-      if @@debugging
-        if @@debug_callback
-          @@debug_callback.call(message)
-        else
-          UnionStationHooks::IOLogging.disable do
-            STDERR.puts("[UnionStationHooks] #{message}")
-          end
-        end
-      end
-    end
-
-    def self.warn_callback=(cb)
-      @@warn_callback = cb
-    end
-
-    def self.debug_callback=(cb)
-      @@debug_callback = cb
+  private
+    def next_io_name
+      result = @next_io_number
+      @next_io_number += 1
+      "io #{result}"
     end
   end
 end

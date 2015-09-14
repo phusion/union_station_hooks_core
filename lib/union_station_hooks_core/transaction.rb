@@ -45,23 +45,25 @@ module UnionStationHooks
     end
 
     def message(text)
-      if !@connection
-        log_message_to_null(text)
-        return
-      end
-
-      @connection.synchronize do
-        if !@connection.connected?
+      UnionStationHooks::IOLogging.disable do
+        if !@connection
           log_message_to_null(text)
           return
         end
 
-        UnionStationHooks::Log.debug('[Union Station log] ' \
-          "#{@txn_id} #{Utils.encoded_timestamp} #{text}")
+        @connection.synchronize do
+          if !@connection.connected?
+            log_message_to_null(text)
+            return
+          end
 
-        io_operation do
-          @connection.channel.write('log', @txn_id, Utils.encoded_timestamp)
-          @connection.channel.write_scalar(text)
+          UnionStationHooks::Log.debug('[Union Station log] ' \
+            "#{@txn_id} #{Utils.encoded_timestamp} #{text}")
+
+          io_operation do
+            @connection.channel.write('log', @txn_id, Utils.encoded_timestamp)
+            @connection.channel.write_scalar(text)
+          end
         end
       end
     end
@@ -125,25 +127,27 @@ module UnionStationHooks
     def close(should_flush_to_disk = false)
       return if !@connection
 
-      @connection.synchronize do
-        return if !@connection.connected?
+      UnionStationHooks::IOLogging.disable do
+        @connection.synchronize do
+          return if !@connection.connected?
 
-        begin
-          io_operation do
-            # We need an ACK here so that we the UstRouter doesn't end up
-            # processing the Core's openTransaction and closeTransaction pair
-            # before it has received this process's openTransaction command.
-            @connection.channel.write('closeTransaction', @txn_id,
-              Utils.encoded_timestamp, true)
-            Utils.process_ust_router_reply(@connection.channel,
-              "Error handling reply for 'closeTransaction' message")
-            if should_flush_to_disk
-              flush_to_disk
+          begin
+            io_operation do
+              # We need an ACK here so that we the UstRouter doesn't end up
+              # processing the Core's openTransaction and closeTransaction pair
+              # before it has received this process's openTransaction command.
+              @connection.channel.write('closeTransaction', @txn_id,
+                Utils.encoded_timestamp, true)
+              Utils.process_ust_router_reply(@connection.channel,
+                "Error handling reply for 'closeTransaction' message")
+              if should_flush_to_disk
+                flush_to_disk
+              end
             end
+          ensure
+            @connection.unref
+            @connection = nil
           end
-        ensure
-          @connection.unref
-          @connection = nil
         end
       end
     end
