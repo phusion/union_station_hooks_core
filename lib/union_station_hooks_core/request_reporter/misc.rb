@@ -55,6 +55,63 @@ module UnionStationHooks
       end
     end
 
+    # Logs the begin of a user-defined activity, for display in the
+    # activity timeline.
+    #
+    # An activity is a block in the activity timeline in the Union Station
+    # user interace. It has a name, a begin time and an end time.
+    #
+    # This form logs only the name and the begin time. You *must* also
+    # call {#log_activity_end} later with the same name to log the end
+    # time.
+    #
+    # @param name The name that should show up in the activity timeline.
+    #   It can be any arbitrary name but may not contain newlines.
+    def log_activity_begin(name)
+      return do_nothing_on_null(:log_activity_begin) if null?
+      @transaction.log_activity_begin(name)
+    end
+
+    # Logs the end of a user-defined activity, for display in the
+    # activity timeline.
+    #
+    # An activity is a block in the activity timeline in the Union Station
+    # user interace. It has a name, a begin time and an end time.
+    #
+    # This form logs only the name and the end time. You *must* also
+    # have called {#log_activity_begin} earlier with the same name to log
+    # the begin time.
+    #
+    # @param name The name that should show up in the activity timeline.
+    #   It can be any arbitrary name but may not contain newlines.
+    # @param [Boolean] has_error Whether an uncaught
+    #   exception occurred during the activity.
+    def log_activity_end(name, has_error = false)
+      return do_nothing_on_null(:log_activity_end) if null?
+      @transaction.log_activity_end(name, UnionStationHooks.now, has_error)
+    end
+
+    # Logs a user-defined activity, for display in the activity timeline.
+    #
+    # An activity is a block in the activity timeline in the Union Station
+    # user interace. It has a name, a begin time and an end time.
+    #
+    # Unlike {#log_activity_block}, this form does not expect a block.
+    # However, you are expected to pass timing information.
+    #
+    # @param name The name that should show up in the activity timeline.
+    #   It can be any arbitrary name but may not contain newlines.
+    # @param [TimePoint or Time] begin_time  The time at which this activity
+    #   begun. See {UnionStationHooks.now} to learn more.
+    # @param [TimePoint or Time] end_time The time at which this activity
+    #   ended. See {UnionStationHooks.now} to learn more.
+    # @param [Boolean] has_error Whether an uncaught
+    #   exception occurred during the activity.
+    def log_activity(name, begin_time, end_time, has_error = false)
+      return do_nothing_on_null(:log_activity) if null?
+      @transaction.log_activity(name, begin_time, end_time, nil, has_error)
+    end
+
     # Logs a benchmarking activity, for display in the activity timeline.
     #
     # An activity is a block in the activity timeline in the Union Station

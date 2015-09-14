@@ -609,7 +609,7 @@ shared_examples_for 'a RequestReporter' do
       end
     end
 
-    it "yields the block and returns its return value" do
+    it 'yields the block and returns its return value' do
       code = %Q{
         UnionStationHooks.initialize!
         reporter = create_reporter
@@ -648,6 +648,98 @@ shared_examples_for 'a RequestReporter' do
         }
         expect(execute(code)).to eq(1234)
       end
+    end
+  end
+
+  describe '#log_activity_begin' do
+    it "logs the specified activity's begin" do
+      code = %Q{
+        UnionStationHooks.initialize!
+        reporter = create_reporter
+        reporter.log_activity_begin('foo')
+      }
+      start_agent
+      execute(code)
+      wait_for_dump_file_existance
+      eventually do
+        read_dump_file.include?('BEGIN: foo (')
+      end
+    end
+
+    it 'does nothing when in null mode' do
+      code = %Q{
+        UnionStationHooks.initialize!
+        silence_warnings
+        hook_request_reporter_do_nothing_on_null
+        reporter = create_reporter
+        reporter.log_activity_begin('foo')
+      }
+      execute(code)
+      expect(read_dump_file('debug')).to \
+        include("Doing nothing: log_activity_begin\n")
+    end
+  end
+
+  describe '#log_activity_end' do
+    it "logs the specified activity's end" do
+      code = %Q{
+        UnionStationHooks.initialize!
+        reporter = create_reporter
+        reporter.log_activity_end('foo')
+      }
+      start_agent
+      execute(code)
+      wait_for_dump_file_existance
+      eventually do
+        read_dump_file.include?('END: foo (')
+      end
+    end
+
+    it 'does nothing when in null mode' do
+      code = %Q{
+        UnionStationHooks.initialize!
+        silence_warnings
+        hook_request_reporter_do_nothing_on_null
+        reporter = create_reporter
+        reporter.log_activity_end('foo')
+      }
+      execute(code)
+      expect(read_dump_file('debug')).to \
+        include("Doing nothing: log_activity_end\n")
+    end
+  end
+
+  describe '#log_activity' do
+    it "logs the specified activity's beginning and end" do
+      code = %Q{
+        UnionStationHooks.initialize!
+        reporter = create_reporter
+        reporter.log_activity('foo', UnionStationHooks.now,
+          UnionStationHooks.now)
+      }
+      start_agent
+      execute(code)
+      wait_for_dump_file_existance
+      eventually do
+        read_dump_file.include?('BEGIN: foo (')
+      end
+      eventually do
+        read_dump_file.include?('END: foo (')
+      end
+    end
+
+    it 'does nothing when in null mode' do
+      code = %Q{
+        UnionStationHooks.initialize!
+        silence_warnings
+        hook_request_reporter_do_nothing_on_null
+        reporter = create_reporter
+        reporter.log_activity('foo', UnionStationHooks.now,
+          UnionStationHooks.now)
+      }
+      execute(code)
+      expect(read_dump_file('debug')).to \
+        include("Doing nothing: log_activity\n")
     end
   end
 
