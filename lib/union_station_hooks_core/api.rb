@@ -123,9 +123,9 @@ module UnionStationHooks
     # etc. The exact information contained in the object is operating
     # system specific, hence why the object is meant to be opaque.
     #
-    # See {RequestReporter#log_controller_action_happened} for an example of
+    # See {RequestReporter#log_controller_action} for an example of
     # an API method which expects timing information.
-    # `RequestReporter#log_controller_action_happened` expects you to
+    # `RequestReporter#log_controller_action` expects you to
     # provide timing information about a controller action. That timing
     # information is supposed to be obtained by calling
     # `UnionStationHooks.now`.

@@ -104,7 +104,7 @@ module UnionStationHooks
 
     # Logs an exception that occurred during a request.
     #
-    # If {#log_controller_action} or {#log_controller_action_happened}
+    # If {#log_controller_action_block} or {#log_controller_action}
     # was called during the same request, then the information passed to
     # those methods will be included in the exception report.
     #
