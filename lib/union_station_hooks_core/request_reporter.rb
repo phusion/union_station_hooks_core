@@ -91,6 +91,11 @@ module UnionStationHooks
   # You can check whether the null mode is active by calling {#null?}.
   #
   # Closing a RequestReporter also causes it to enter the null mode.
+  #
+  # ## Thread-safety
+  #
+  # RequestReporter is *not* thread-safe. If you access it concurrently, be sure
+  # to wrap its operations in a mutex.
   class RequestReporter
     # Returns a new RequestReporter object. You should not call
     # `RequestReporter.new` directly. See "Obtaining a RequestReporter"
