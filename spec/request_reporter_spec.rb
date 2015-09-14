@@ -24,7 +24,6 @@
 require File.expand_path(File.dirname(__FILE__) + '/spec_helper')
 require 'tmpdir'
 require 'fileutils'
-require 'yaml'
 require 'base64'
 require 'digest/md5'
 
@@ -65,85 +64,6 @@ shared_examples_for 'a RequestReporter' do
     Dir.chdir(@tmpdir)
     puts "You are at #{@tmpdir}."
     puts "You can find UstRouter dump files in 'dump'."
-  end
-
-  def execute(code)
-    code_path = "#{@tmpdir}/code.rb"
-    write_file(code_path, code)
-
-    result_path = "#{@tmpdir}/result.yml"
-    main_lib_path = "#{UnionStationHooks::LIBROOT}/union_station_hooks_core"
-    runner_path = "#{@tmpdir}/runner.rb"
-    runner = %Q{
-      require 'yaml'
-      if ENV['COVERAGE']
-        begin
-          require 'simplecov'
-          SimpleCov.command_name('Inline code ' +
-            #{Digest::MD5.hexdigest(@example_full_description).inspect})
-          SimpleCov.start('test')
-        rescue LoadError
-          # Ignore error
-        end
-      end
-      require #{main_lib_path.inspect}
-
-      UnionStationHooks.config[:union_station_key] = 'any-key'
-      UnionStationHooks.config[:app_group_name] = 'any-app'
-      UnionStationHooks.config[:ust_router_address] = #{@socket_address.inspect}
-      UnionStationHooks.config[:ust_router_password] = #{@password.inspect}
-
-      $txn_id = 'txn-1234'
-
-      def create_reporter
-        $reporter =
-          UnionStationHooks::RequestReporter.new(UnionStationHooks.context,
-            $txn_id, UnionStationHooks.app_group_name,
-            UnionStationHooks.key)
-      end
-
-      def silence_warnings
-        UnionStationHooks::Log.warn_callback = lambda { |message| }
-      end
-
-      def log_debug(message)
-        File.open(#{dump_file_path(:debug).inspect}, 'a') do |f|
-          f.puts(message)
-        end
-      end
-
-      def hook_request_reporter_do_nothing_on_null
-        UnionStationHooks::RequestReporter.class_eval do
-          def do_nothing_on_null(source)
-            log_debug("Doing nothing: \#{source}")
-          end
-        end
-      end
-
-      module UnionStationHooks
-        result = eval(File.read(#{code_path.inspect}),
-          binding, #{code_path.inspect})
-
-        if $reporter
-          $reporter.close
-        end
-
-        File.open(#{result_path.inspect}, 'w') do |f|
-          f.write(YAML.dump(result))
-        end
-      end
-    }
-    write_file(runner_path, runner)
-
-    result = system("#{ruby_command} #{Shellwords.escape runner_path}")
-    if !result
-      if $? && $?.termsig
-        RSpec.world.wants_to_quit = true
-      end
-      raise "Error evaluating code with '#{ruby_command}':\n#{code}"
-    end
-
-    YAML.load_file(result_path)
   end
 
   describe '#log_request_begin' do
