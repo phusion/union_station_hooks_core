@@ -21,7 +21,6 @@
 #  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 #  THE SOFTWARE.
 
-require 'digest/md5'
 UnionStationHooks.require_lib 'utils'
 
 module UnionStationHooks
@@ -41,17 +40,18 @@ module UnionStationHooks
     # @return The return value of the block.
     # @yield The block is expected to perform the activity.
     # @example
-    #   reporter.log_activity_block('Preheat cache') do
+    #   reporter.log_user_activity_block('Preheat cache') do
     #     calculate_preheat_values.each_pair do |key, value|
     #       Rails.cache.write(key, value)
     #     end
     #   end
-    def log_activity_block(name, &block)
+    def log_user_activity_block(name, &block)
       if null?
-        do_nothing_on_null(:log_activity_block)
+        do_nothing_on_null(:log_user_activity_block)
         yield
       else
-        @transaction.log_activity_block(name, &block)
+        @transaction.log_activity_block(next_user_activity_name,
+          name, &block)
       end
     end
 
@@ -62,14 +62,17 @@ module UnionStationHooks
     # user interace. It has a name, a begin time and an end time.
     #
     # This form logs only the name and the begin time. You *must* also
-    # call {#log_activity_end} later with the same name to log the end
+    # call {#log_user_activity_end} later with the same name to log the end
     # time.
     #
     # @param name The name that should show up in the activity timeline.
     #   It can be any arbitrary name but may not contain newlines.
-    def log_activity_begin(name)
-      return do_nothing_on_null(:log_activity_begin) if null?
-      @transaction.log_activity_begin(name)
+    # @return id An ID which you must pass to {#log_user_activity_end} later.
+    def log_user_activity_begin(name)
+      return do_nothing_on_null(:log_user_activity_begin) if null?
+      id = next_user_activity_name
+      @transaction.log_activity_begin(id, UnionStationHooks.now, name)
+      id
     end
 
     # Logs the end of a user-defined activity, for display in the
@@ -79,16 +82,16 @@ module UnionStationHooks
     # user interace. It has a name, a begin time and an end time.
     #
     # This form logs only the name and the end time. You *must* also
-    # have called {#log_activity_begin} earlier with the same name to log
+    # have called {#log_user_activity_begin} earlier with the same name to log
     # the begin time.
     #
-    # @param name The name that should show up in the activity timeline.
-    #   It can be any arbitrary name but may not contain newlines.
+    # @param id The ID which you obtained from {#log_user_activity_begin}
+    #   earlier.
     # @param [Boolean] has_error Whether an uncaught
     #   exception occurred during the activity.
-    def log_activity_end(name, has_error = false)
-      return do_nothing_on_null(:log_activity_end) if null?
-      @transaction.log_activity_end(name, UnionStationHooks.now, has_error)
+    def log_user_activity_end(id, has_error = false)
+      return do_nothing_on_null(:log_user_activity_end) if null?
+      @transaction.log_activity_end(id, UnionStationHooks.now, has_error)
     end
 
     # Logs a user-defined activity, for display in the activity timeline.
@@ -96,7 +99,7 @@ module UnionStationHooks
     # An activity is a block in the activity timeline in the Union Station
     # user interace. It has a name, a begin time and an end time.
     #
-    # Unlike {#log_activity_block}, this form does not expect a block.
+    # Unlike {#log_user_activity_block}, this form does not expect a block.
     # However, you are expected to pass timing information.
     #
     # @param name The name that should show up in the activity timeline.
@@ -107,9 +110,10 @@ module UnionStationHooks
     #   ended. See {UnionStationHooks.now} to learn more.
     # @param [Boolean] has_error Whether an uncaught
     #   exception occurred during the activity.
-    def log_activity(name, begin_time, end_time, has_error = false)
-      return do_nothing_on_null(:log_activity) if null?
-      @transaction.log_activity(name, begin_time, end_time, nil, has_error)
+    def log_user_activity(name, begin_time, end_time, has_error = false)
+      return do_nothing_on_null(:log_user_activity) if null?
+      @transaction.log_activity(next_user_activity_name,
+        begin_time, end_time, name, has_error)
     end
 
     # Logs a benchmarking activity, for display in the activity timeline.
@@ -128,8 +132,8 @@ module UnionStationHooks
     # displayed in the acitivity timeline. This method measures the time before
     # and after the block runs.
     #
-    # The difference between this method and {#log_activity_block} is that this
-    # method generates timeline blocks of a different color, as to
+    # The difference between this method and {#log_user_activity_block} is that
+    # this method generates timeline blocks of a different color, as to
     # differentiate user-defined activities from benchmark activities.
     #
     # If your app is a Rails app, then the `union_station_hooks_rails` gem
@@ -155,7 +159,7 @@ module UnionStationHooks
         do_nothing_on_null(:log_benchmark_block)
         yield
       else
-        log_activity_block("BENCHMARK: #{title}", &block)
+        log_user_activity_block("Benchmark: #{title}", &block)
       end
     end
 
@@ -211,8 +215,7 @@ module UnionStationHooks
       end_time = options[:end_time]
       query = options[:query]
 
-      digest = Digest::MD5.hexdigest("#{name}\0#{query}\0#{rand}")
-      @transaction.log_activity("DB BENCHMARK: #{digest}",
+      @transaction.log_activity(next_database_query_name,
         begin_time, end_time, "#{name}\n#{query}")
     end
 
@@ -270,6 +273,20 @@ module UnionStationHooks
       else
         @transaction.message("Cache miss: #{name}")
       end
+    end
+
+  private
+
+    def next_user_activity_name
+      result = @next_user_activity_number
+      @next_user_activity_number += 1
+      "user activity #{result}"
+    end
+
+    def next_database_query_name
+      result = @next_database_query_number
+      @next_database_query_number += 1
+      "database query #{result}"
     end
   end
 end

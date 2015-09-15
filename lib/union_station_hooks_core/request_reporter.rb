@@ -111,6 +111,9 @@ module UnionStationHooks
       @app_group_name = app_group_name
       @key = key
       @transaction = continue_transaction
+      @next_view_rendering_number = 1
+      @next_user_activity_number = 1
+      @next_database_query_number = 1
     end
 
     # Indicates that no further information will be logged for this

@@ -36,14 +36,17 @@ module UnionStationHooks
     # if your application is a Rails app. It will call this on every view
     # or partial rendering.
     #
+    # @param [String] name Name of the view, template or partial that is being
+    #   rendered.
     # @yield The given block is expected to perform the actual view rendering.
     # @return The return value of the block.
-    def log_view_rendering_block(&block)
+    def log_view_rendering_block(name, &block)
       if null?
         do_nothing_on_null(:log_view_rendering_block)
         yield
       else
-        log_activity_block('view rendering', &block)
+        @transaction.log_activity_block(next_view_rendering_name,
+          name, &block)
       end
     end
 
@@ -58,6 +61,8 @@ module UnionStationHooks
     # {#log_view_rendering_block} for you if your application is a Rails app.
     # It will call this on every view or partial rendering.
     #
+    # @option options [String] :name Name of the view, template or partial
+    #   that is being rendered.
     # @option options [TimePoint or Time] :begin_time The time at which this
     #   view rendering begun. See {UnionStationHooks.now} to learn more.
     # @option options [TimePoint or Time] :end_time The time at which this view
@@ -66,11 +71,21 @@ module UnionStationHooks
     #   exception occurred during the view rendering. Default: false.
     def log_view_rendering(options)
       return do_nothing_on_null(:log_view_rendering) if null?
+      Utils.require_key(options, :name)
       Utils.require_key(options, :begin_time)
       Utils.require_key(options, :end_time)
 
-      @transaction.log_activity('view rendering', options[:begin_time],
-        options[:end_time], nil, options[:has_error])
+      @transaction.log_activity(next_view_rendering_name,
+        options[:begin_time], options[:end_time],
+        options[:name], options[:has_error])
+    end
+
+  private
+
+    def next_view_rendering_name
+      result = @next_view_rendering_number
+      @next_view_rendering_number += 1
+      "view rendering #{result}"
     end
   end
 end

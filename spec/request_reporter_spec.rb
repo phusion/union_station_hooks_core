@@ -412,7 +412,7 @@ shared_examples_for 'a RequestReporter' do
       code = %Q{
         UnionStationHooks.initialize!
         reporter = create_reporter
-        reporter.log_view_rendering_block do
+        reporter.log_view_rendering_block('foo.html') do
           # Do nothing
         end
       }
@@ -420,18 +420,61 @@ shared_examples_for 'a RequestReporter' do
       execute(code)
       wait_for_dump_file_existance
       eventually do
-        read_dump_file.include?('BEGIN: view rendering (')
+        read_dump_file.include?('BEGIN: view rendering 1 (')
       end
       eventually do
-        read_dump_file.include?('END: view rendering (')
+        read_dump_file.include?('END: view rendering 1 (')
       end
     end
 
-    it "yields the block's and returns its return value" do
+    specify 'its number increases monotonically' do
       code = %Q{
         UnionStationHooks.initialize!
         reporter = create_reporter
-        reporter.log_view_rendering_block do
+        reporter.log_view_rendering_block('foo.html') do
+          # Do nothing
+        end
+        reporter.log_view_rendering_block('foo.html') do
+          # Do nothing
+        end
+      }
+      start_agent
+      execute(code)
+      wait_for_dump_file_existance
+      eventually do
+        read_dump_file.include?('BEGIN: view rendering 2 (')
+      end
+      eventually do
+        read_dump_file.include?('END: view rendering 2 (')
+      end
+    end
+
+    it 'logs the view name' do
+      code = %Q{
+        UnionStationHooks.initialize!
+        reporter = create_reporter
+        reporter.log_view_rendering_block('foo.html') do
+          # Do nothing
+        end
+      }
+      start_agent
+      execute(code)
+      wait_for_dump_file_existance
+      eventually do
+        read_dump_file.include?('BEGIN: view rendering 1 (')
+      end
+      read_dump_file =~ /view rendering 1 \(.+?\) (.+)/
+      extra_info_base64 = $1
+
+      extra_info = Base64.decode64(extra_info_base64)
+      expect(extra_info).to eq('foo.html')
+    end
+
+    it "yields the block and returns its return value" do
+      code = %Q{
+        UnionStationHooks.initialize!
+        reporter = create_reporter
+        reporter.log_view_rendering_block('foo.html') do
           1234
         end
       }
@@ -446,7 +489,7 @@ shared_examples_for 'a RequestReporter' do
           silence_warnings
           hook_request_reporter_do_nothing_on_null
           reporter = create_reporter
-          reporter.log_view_rendering_block do
+          reporter.log_view_rendering_block('foo.html') do
             # Do nothing
           end
         }
@@ -460,7 +503,7 @@ shared_examples_for 'a RequestReporter' do
           UnionStationHooks.initialize!
           silence_warnings
           reporter = create_reporter
-          reporter.log_view_rendering_block do
+          reporter.log_view_rendering_block('foo.html') do
             1234
           end
         }
@@ -476,7 +519,8 @@ shared_examples_for 'a RequestReporter' do
         reporter = create_reporter
         options = {
           :begin_time => UnionStationHooks.now,
-          :end_time => UnionStationHooks.now
+          :end_time => UnionStationHooks.now,
+          :name => 'foo.html'
         }
         reporter.log_view_rendering(options)
       }
@@ -484,11 +528,58 @@ shared_examples_for 'a RequestReporter' do
       execute(code)
       wait_for_dump_file_existance
       eventually do
-        read_dump_file.include?('BEGIN: view rendering (')
+        read_dump_file.include?('BEGIN: view rendering 1 (')
       end
       eventually do
-        read_dump_file.include?('END: view rendering (')
+        read_dump_file.include?('END: view rendering 1 (')
       end
+    end
+
+    specify 'its number increases monotonically' do
+      code = %Q{
+        UnionStationHooks.initialize!
+        reporter = create_reporter
+        options = {
+          :begin_time => UnionStationHooks.now,
+          :end_time => UnionStationHooks.now,
+          :name => 'foo.html'
+        }
+        reporter.log_view_rendering(options)
+        reporter.log_view_rendering(options)
+      }
+      start_agent
+      execute(code)
+      wait_for_dump_file_existance
+      eventually do
+        read_dump_file.include?('BEGIN: view rendering 2 (')
+      end
+      eventually do
+        read_dump_file.include?('END: view rendering 2 (')
+      end
+    end
+
+    it 'logs the view name' do
+      code = %Q{
+        UnionStationHooks.initialize!
+        reporter = create_reporter
+        options = {
+          :begin_time => UnionStationHooks.now,
+          :end_time => UnionStationHooks.now,
+          :name => 'foo.html'
+        }
+        reporter.log_view_rendering(options)
+      }
+      start_agent
+      execute(code)
+      wait_for_dump_file_existance
+      eventually do
+        read_dump_file.include?('BEGIN: view rendering 1 (')
+      end
+      read_dump_file =~ /view rendering 1 \(.+?\) (.+)/
+      extra_info_base64 = $1
+
+      extra_info = Base64.decode64(extra_info_base64)
+      expect(extra_info).to eq('foo.html')
     end
 
     it 'does nothing when in null mode' do
@@ -499,7 +590,8 @@ shared_examples_for 'a RequestReporter' do
         reporter = create_reporter
         options = {
           :begin_time => UnionStationHooks.now,
-          :end_time => UnionStationHooks.now
+          :end_time => UnionStationHooks.now,
+          :name => 'foo.html'
         }
         reporter.log_view_rendering(options)
       }
@@ -509,12 +601,12 @@ shared_examples_for 'a RequestReporter' do
     end
   end
 
-  describe '#log_activity_block' do
+  describe '#log_user_activity_block' do
     it "logs the specified activity's beginning and end" do
       code = %Q{
         UnionStationHooks.initialize!
         reporter = create_reporter
-        reporter.log_activity_block('foo') do
+        reporter.log_user_activity_block('foo') do
           # Do nothing
         end
       }
@@ -522,18 +614,61 @@ shared_examples_for 'a RequestReporter' do
       execute(code)
       wait_for_dump_file_existance
       eventually do
-        read_dump_file.include?('BEGIN: foo (')
+        read_dump_file.include?('BEGIN: user activity 1 (')
       end
       eventually do
-        read_dump_file.include?('END: foo (')
+        read_dump_file.include?('END: user activity 1 (')
       end
+    end
+
+    specify 'its number increases monotonically' do
+      code = %Q{
+        UnionStationHooks.initialize!
+        reporter = create_reporter
+        reporter.log_user_activity_block('foo') do
+          # Do nothing
+        end
+        reporter.log_user_activity_block('foo') do
+          # Do nothing
+        end
+      }
+      start_agent
+      execute(code)
+      wait_for_dump_file_existance
+      eventually do
+        read_dump_file.include?('BEGIN: user activity 2 (')
+      end
+      eventually do
+        read_dump_file.include?('END: user activity 2 (')
+      end
+    end
+
+    it 'logs the user activity name' do
+      code = %Q{
+        UnionStationHooks.initialize!
+        reporter = create_reporter
+        reporter.log_user_activity_block('foo') do
+          # Do nothing
+        end
+      }
+      start_agent
+      execute(code)
+      wait_for_dump_file_existance
+      eventually do
+        read_dump_file.include?('BEGIN: user activity 1 (')
+      end
+      read_dump_file =~ /user activity 1 \(.+?\) (.+)/
+      extra_info_base64 = $1
+
+      extra_info = Base64.decode64(extra_info_base64)
+      expect(extra_info).to eq('foo')
     end
 
     it 'yields the block and returns its return value' do
       code = %Q{
         UnionStationHooks.initialize!
         reporter = create_reporter
-        reporter.log_activity_block('foo') do
+        reporter.log_user_activity_block('foo') do
           1234
         end
       }
@@ -548,13 +683,14 @@ shared_examples_for 'a RequestReporter' do
           silence_warnings
           hook_request_reporter_do_nothing_on_null
           reporter = create_reporter
-          reporter.log_activity_block('foo') do
+          reporter.log_user_activity_block('foo') do
             # Do nothing
           end
         }
         execute(code)
+        wait_for_dump_file_existance('debug')
         expect(read_dump_file('debug')).to \
-          include("Doing nothing: log_activity_block\n")
+          include("Doing nothing: log_user_activity_block\n")
       end
 
       it "yields the block and returns its return value" do
@@ -562,7 +698,7 @@ shared_examples_for 'a RequestReporter' do
           UnionStationHooks.initialize!
           silence_warnings
           reporter = create_reporter
-          reporter.log_activity_block('foo') do
+          reporter.log_user_activity_block('foo') do
             1234
           end
         }
@@ -571,19 +707,63 @@ shared_examples_for 'a RequestReporter' do
     end
   end
 
-  describe '#log_activity_begin' do
+  describe '#log_user_activity_begin' do
     it "logs the specified activity's begin" do
       code = %Q{
         UnionStationHooks.initialize!
         reporter = create_reporter
-        reporter.log_activity_begin('foo')
+        reporter.log_user_activity_begin('foo')
       }
       start_agent
       execute(code)
       wait_for_dump_file_existance
       eventually do
-        read_dump_file.include?('BEGIN: foo (')
+        read_dump_file.include?('BEGIN: user activity 1 (')
       end
+    end
+
+    it 'returns an ID' do
+      code = %Q{
+        UnionStationHooks.initialize!
+        reporter = create_reporter
+        reporter.log_user_activity_begin('foo')
+      }
+      start_agent
+      expect(execute(code)).not_to be_nil
+    end
+
+    specify 'its number increases monotonically' do
+      code = %Q{
+        UnionStationHooks.initialize!
+        reporter = create_reporter
+        reporter.log_user_activity_begin('foo')
+        reporter.log_user_activity_begin('foo')
+      }
+      start_agent
+      execute(code)
+      wait_for_dump_file_existance
+      eventually do
+        read_dump_file.include?('BEGIN: user activity 2 (')
+      end
+    end
+
+    it 'logs the user activity name' do
+      code = %Q{
+        UnionStationHooks.initialize!
+        reporter = create_reporter
+        reporter.log_user_activity_begin('foo')
+      }
+      start_agent
+      execute(code)
+      wait_for_dump_file_existance
+      eventually do
+        read_dump_file.include?('BEGIN: user activity 1 (')
+      end
+      read_dump_file =~ /user activity 1 \(.+?\) (.+)/
+      extra_info_base64 = $1
+
+      extra_info = Base64.decode64(extra_info_base64)
+      expect(extra_info).to eq('foo')
     end
 
     it 'does nothing when in null mode' do
@@ -592,26 +772,27 @@ shared_examples_for 'a RequestReporter' do
         silence_warnings
         hook_request_reporter_do_nothing_on_null
         reporter = create_reporter
-        reporter.log_activity_begin('foo')
+        reporter.log_user_activity_begin('foo')
       }
       execute(code)
       expect(read_dump_file('debug')).to \
-        include("Doing nothing: log_activity_begin\n")
+        include("Doing nothing: log_user_activity_begin\n")
     end
   end
 
-  describe '#log_activity_end' do
+  describe '#log_user_activity_end' do
     it "logs the specified activity's end" do
       code = %Q{
         UnionStationHooks.initialize!
         reporter = create_reporter
-        reporter.log_activity_end('foo')
+        id = reporter.log_user_activity_begin('foo')
+        reporter.log_user_activity_end(id)
       }
       start_agent
       execute(code)
       wait_for_dump_file_existance
       eventually do
-        read_dump_file.include?('END: foo (')
+        read_dump_file.include?('END: user activity 1 (')
       end
     end
 
@@ -621,31 +802,73 @@ shared_examples_for 'a RequestReporter' do
         silence_warnings
         hook_request_reporter_do_nothing_on_null
         reporter = create_reporter
-        reporter.log_activity_end('foo')
+        id = reporter.log_user_activity_begin('foo')
+        reporter.log_user_activity_end(id)
       }
       execute(code)
+      wait_for_dump_file_existance('debug')
       expect(read_dump_file('debug')).to \
-        include("Doing nothing: log_activity_end\n")
+        include("Doing nothing: log_user_activity_end\n")
     end
   end
 
-  describe '#log_activity' do
+  describe '#log_user_activity' do
     it "logs the specified activity's beginning and end" do
       code = %Q{
         UnionStationHooks.initialize!
         reporter = create_reporter
-        reporter.log_activity('foo', UnionStationHooks.now,
+        reporter.log_user_activity('foo', UnionStationHooks.now,
           UnionStationHooks.now)
       }
       start_agent
       execute(code)
       wait_for_dump_file_existance
       eventually do
-        read_dump_file.include?('BEGIN: foo (')
+        read_dump_file.include?('BEGIN: user activity 1 (')
       end
       eventually do
-        read_dump_file.include?('END: foo (')
+        read_dump_file.include?('END: user activity 1 (')
       end
+    end
+
+    specify 'its number increases monotonically' do
+      code = %Q{
+        UnionStationHooks.initialize!
+        reporter = create_reporter
+        reporter.log_user_activity('foo', UnionStationHooks.now,
+          UnionStationHooks.now)
+        reporter.log_user_activity('foo', UnionStationHooks.now,
+          UnionStationHooks.now)
+      }
+      start_agent
+      execute(code)
+      wait_for_dump_file_existance
+      eventually do
+        read_dump_file.include?('BEGIN: user activity 2 (')
+      end
+      eventually do
+        read_dump_file.include?('END: user activity 2 (')
+      end
+    end
+
+    it 'logs the user activity name' do
+      code = %Q{
+        UnionStationHooks.initialize!
+        reporter = create_reporter
+        reporter.log_user_activity('foo', UnionStationHooks.now,
+          UnionStationHooks.now)
+      }
+      start_agent
+      execute(code)
+      wait_for_dump_file_existance
+      eventually do
+        read_dump_file.include?('BEGIN: user activity 1 (')
+      end
+      read_dump_file =~ /user activity 1 \(.+?\) (.+)/
+      extra_info_base64 = $1
+
+      extra_info = Base64.decode64(extra_info_base64)
+      expect(extra_info).to eq('foo')
     end
 
     it 'does nothing when in null mode' do
@@ -654,12 +877,12 @@ shared_examples_for 'a RequestReporter' do
         silence_warnings
         hook_request_reporter_do_nothing_on_null
         reporter = create_reporter
-        reporter.log_activity('foo', UnionStationHooks.now,
+        reporter.log_user_activity('foo', UnionStationHooks.now,
           UnionStationHooks.now)
       }
       execute(code)
       expect(read_dump_file('debug')).to \
-        include("Doing nothing: log_activity\n")
+        include("Doing nothing: log_user_activity\n")
     end
   end
 
@@ -676,14 +899,14 @@ shared_examples_for 'a RequestReporter' do
       execute(code)
       wait_for_dump_file_existance
       eventually do
-        read_dump_file.include?('BEGIN: BENCHMARK: Benchmarking (')
+        read_dump_file.include?('BEGIN: user activity 1 (')
       end
       eventually do
-        read_dump_file.include?('END: BENCHMARK: Benchmarking (')
+        read_dump_file.include?('END: user activity 1 (')
       end
     end
 
-    it 'allows customizing the title' do
+    it "logs the benchmark activity's title" do
       code = %Q{
         UnionStationHooks.initialize!
         reporter = create_reporter
@@ -695,11 +918,13 @@ shared_examples_for 'a RequestReporter' do
       execute(code)
       wait_for_dump_file_existance
       eventually do
-        read_dump_file.include?('BEGIN: BENCHMARK: foo (')
+        read_dump_file.include?('BEGIN: user activity 1 (')
       end
-      eventually do
-        read_dump_file.include?('END: BENCHMARK: foo (')
-      end
+      read_dump_file =~ /user activity 1 \(.+?\) (.+)/
+      extra_info_base64 = $1
+
+      extra_info = Base64.decode64(extra_info_base64)
+      expect(extra_info).to eq('Benchmark: foo')
     end
 
     it "yields the block and returns its return value" do
@@ -903,10 +1128,9 @@ shared_examples_for 'a RequestReporter' do
 
       wait_for_dump_file_existance
       eventually do
-        File.exist?(dump_file_path) &&
-          read_dump_file.include?('BEGIN: DB BENCHMARK: ')
+        read_dump_file.include?('BEGIN: database query 1 (')
       end
-      read_dump_file =~ /DB BENCHMARK: .+? \(.+?\) (.+)/
+      read_dump_file =~ /database query 1 \(.+?\) (.+)/
       extra_info_base64 = $1
 
       extra_info = Base64.decode64(extra_info_base64)
@@ -929,10 +1153,9 @@ shared_examples_for 'a RequestReporter' do
 
       wait_for_dump_file_existance
       eventually do
-        File.exist?(dump_file_path) &&
-          read_dump_file.include?('BEGIN: DB BENCHMARK: ')
+        read_dump_file.include?('BEGIN: database query 1 (')
       end
-      read_dump_file =~ /DB BENCHMARK: .+? \(.+?\) (.+)/
+      read_dump_file =~ /database query 1 \(.+?\) (.+)/
       extra_info_base64 = $1
 
       extra_info = Base64.decode64(extra_info_base64)
