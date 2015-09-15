@@ -52,7 +52,7 @@ module UnionStationHooks
     # @private
     GC_SUPPORTS_CLEAR_STATS = GC.respond_to?(:clear_stats)
 
-    # Log the beginning of a Rack request. This is automatically called
+    # Logs the beginning of a Rack request. This is automatically called
     # from {UnionStationHooks.begin_rack_request} (and thus automatically
     # from Passenger).
     #
@@ -62,9 +62,16 @@ module UnionStationHooks
       @transaction.log_activity_begin('app request handler processing')
     end
 
-    # Log the end of a Rack request. This is automatically called
-    # from {UnionStationHooks.begin_rack_request} (and thus automatically
-    # from Passenger).
+    # Logs the end of a Rack request. This means that the Rack response body
+    # has been written out, and that the `#close` has been called on the Rack
+    # response body.
+    #
+    # This does not necessarily indicate that any buffering mechanism in
+    # between the app and the client (e.g. Nginx, or the Passenger core) is
+    # done flushing the response to the client.
+    #
+    # This is automatically called from {UnionStationHooks.begin_rack_request}
+    # (and thus automatically from Passenger).
     #
     # @private
     def log_request_end(uncaught_exception_raised_during_request = false)
@@ -128,5 +135,51 @@ module UnionStationHooks
     end
 
     # rubocop:enable Metrics/CyclomaticComplexity,Metrics/PerceivedComplexity
+
+    # Logs that the application server is about to write out the Rack
+    # response body.
+    #
+    # This is automatically called by Passenger's Rack handler.
+    #
+    # @private
+    def log_writing_rack_body_begin
+      return do_nothing_on_null(:log_writing_rack_body_begin) if null?
+      @transaction.log_activity_begin('writing out response body')
+    end
+
+    # Logs that the application server is done writing out the Rack
+    # response body. This does not necessarily indicate that any buffering
+    # mechanism in between the app and the client (e.g. Nginx, or the Passenger
+    # core) is done flushing the response to the client.
+    #
+    # This is automatically called by Passenger's Rack handler.
+    #
+    # @private
+    def log_writing_rack_body_end
+      return do_nothing_on_null(:log_writing_rack_body_end) if null?
+      @transaction.log_activity_end('writing out response body')
+    end
+
+    # Logs that the application server is about to call `#close` on the
+    # Rack body object.
+    #
+    # This is automatically called by Passenger's Rack handler.
+    #
+    # @private
+    def log_closing_rack_body_begin
+      return do_nothing_on_null(:log_closing_rack_body_begin) if null?
+      @transaction.log_activity_begin('closing rack body object')
+    end
+
+    # Logs that the application server is done calling `#close` on the
+    # Rack body object.
+    #
+    # This is automatically called by Passenger's Rack handler.
+    #
+    # @private
+    def log_closing_rack_body_end
+      return do_nothing_on_null(:log_closing_rack_body_end) if null?
+      @transaction.log_activity_end('closing rack body object')
+    end
   end
 end
