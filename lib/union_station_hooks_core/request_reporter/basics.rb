@@ -148,7 +148,7 @@ module UnionStationHooks
     # @return An ID to be passed later to {#log_writing_rack_body_end}.
     def log_writing_rack_body_begin
       return do_nothing_on_null(:log_writing_rack_body_begin) if null?
-      @transaction.log_activity_begin('writing out response body')
+      @transaction.log_activity_begin('app writing out response body')
       nil
     end
 
@@ -162,7 +162,7 @@ module UnionStationHooks
     # @private
     def log_writing_rack_body_end(id)
       return do_nothing_on_null(:log_writing_rack_body_end) if null?
-      @transaction.log_activity_end('writing out response body')
+      @transaction.log_activity_end('app writing out response body')
       nil
     end
 
