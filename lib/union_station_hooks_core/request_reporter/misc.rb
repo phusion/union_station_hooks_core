@@ -159,7 +159,8 @@ module UnionStationHooks
         do_nothing_on_null(:log_benchmark_block)
         yield
       else
-        log_user_activity_block("Benchmark: #{title}", &block)
+        @transaction.log_activity_block(next_benchmark_name,
+          title, &block)
       end
     end
 
@@ -281,6 +282,12 @@ module UnionStationHooks
       result = @next_user_activity_number
       @next_user_activity_number += 1
       "user activity #{result}"
+    end
+
+    def next_benchmark_name
+      result = @next_benchmark_number
+      @next_benchmark_number += 1
+      "benchmark #{result}"
     end
 
     def next_database_query_name

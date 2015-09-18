@@ -899,10 +899,10 @@ shared_examples_for 'a RequestReporter' do
       execute(code)
       wait_for_dump_file_existance
       eventually do
-        read_dump_file.include?('BEGIN: user activity 1 (')
+        read_dump_file.include?('BEGIN: benchmark 1 (')
       end
       eventually do
-        read_dump_file.include?('END: user activity 1 (')
+        read_dump_file.include?('END: benchmark 1 (')
       end
     end
 
@@ -918,13 +918,13 @@ shared_examples_for 'a RequestReporter' do
       execute(code)
       wait_for_dump_file_existance
       eventually do
-        read_dump_file.include?('BEGIN: user activity 1 (')
+        read_dump_file.include?('BEGIN: benchmark 1 (')
       end
-      read_dump_file =~ /user activity 1 \(.+?\) (.+)/
+      read_dump_file =~ /benchmark 1 \(.+?\) (.+)/
       extra_info_base64 = $1
 
       extra_info = Base64.decode64(extra_info_base64)
-      expect(extra_info).to eq('Benchmark: foo')
+      expect(extra_info).to eq('foo')
     end
 
     it "yields the block and returns its return value" do

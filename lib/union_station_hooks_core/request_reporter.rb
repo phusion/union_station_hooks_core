@@ -113,6 +113,7 @@ module UnionStationHooks
       @transaction = continue_transaction
       @next_view_rendering_number = 1
       @next_user_activity_number = 1
+      @next_benchmark_number = 1
       @next_database_query_number = 1
     end
 
