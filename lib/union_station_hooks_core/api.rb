@@ -151,6 +151,16 @@ module UnionStationHooks
         config[:node_name])
     end
 
+    def install_postfork_hook
+      if defined?(PhusionPassenger)
+        PhusionPassenger.on_event(:starting_worker_process) do |forked|
+          if forked
+            UnionStationHooks.context.clear_connection
+          end
+        end
+      end
+    end
+
     def install_event_pre_hook
       preprocessor = @@config[:event_preprocessor]
       if preprocessor

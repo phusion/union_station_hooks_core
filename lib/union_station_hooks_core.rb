@@ -163,6 +163,7 @@ module UnionStationHooks
       finalize_and_validate_config
       require_lib('api')
       create_context
+      install_postfork_hook
       install_event_pre_hook
       initialize_other_union_station_hooks_gems
       finalize_install
