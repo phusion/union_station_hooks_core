@@ -1,6 +1,6 @@
 require 'shellwords'
 
-TRAVIS_PASSENGER_BRANCH = 'ust_router_rewrite'
+TRAVIS_PASSENGER_BRANCH = 'master'
 
 desc 'Run tests'
 task :spec do
