@@ -28,7 +28,7 @@ If your application is a Rails application, then you should use the [union_stati
 
 ### Using with Passenger
 
-**Note: This documentation section only applies to Passenger X.X.X or later!**
+**Note: This documentation section only applies to Passenger 5.0.20 or later!**
 
 If you use [Passenger](https://www.phusionpassenger.com/), then you do not need to install the `union_station_hooks_core` gem. `union_station_hooks_core` is bundled with Passenger.
 

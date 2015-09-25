@@ -42,7 +42,7 @@ end
 
 # The UnionStationHooks module is the entry point to the
 # `union_station_hooks_core` gem's public API. Note that this API is only
-# available since Passenger X.X.X!
+# available since Passenger 5.0.20!
 #
 # **_Not familiar with `union_station_hooks_core`? Please read the
 # [README](https://github.com/phusion/union_station_hooks_core)
