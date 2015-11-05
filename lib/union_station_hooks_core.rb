@@ -81,6 +81,7 @@ end
 #       # object, you can log to Union Station information about the current
 #       # request.
 #       reporter = env['union_station_hooks']
+#       # -OR- (if you don't have access to the Rack env):
 #       reporter = Thread.current[:union_station_hooks]
 #
 #       # The reporter object may be nil because of various error conditions,

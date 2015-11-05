@@ -100,11 +100,11 @@ Please refer to [the API documentation website](http://www.rubydoc.info/github/p
 
 ## Legacy code
 
-Before Passenger X.X.X, the Union Station setup instructions used to tell you to create a `config/initializers/passenger.rb` in which you call the following code:
+Before Passenger 5.0.20, the Union Station setup instructions used to tell you to create a `config/initializers/passenger.rb` in which you call the following code:
 
     PhusionPassenger.install_framework_extensions! if defined?(PhusionPassenger)
 
-Since Passenger X.X.X, `PhusionPassenger.install_framework_extensions!` has become an alias for `UnionStationHooks.initialize!`, but the former is considered deprecated. Please replace the above code with:
+Since Passenger 5.0.20, `PhusionPassenger.install_framework_extensions!` has become an alias for `UnionStationHooks.initialize!`, but the former is considered deprecated. Please replace the above code with:
 
     if defined?(UnionStationHooks)
       UnionStationHooks.initialize!
