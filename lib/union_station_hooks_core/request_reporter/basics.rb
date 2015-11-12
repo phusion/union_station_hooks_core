@@ -145,11 +145,12 @@ module UnionStationHooks
     # This is automatically called by Passenger's Rack handler.
     #
     # @private
-    # @return An ID to be passed later to {#log_writing_rack_body_end}.
+    # @return An ID to be passed later to {#log_writing_rack_body_end}, or nil
+    #   on error.
     def log_writing_rack_body_begin
       return do_nothing_on_null(:log_writing_rack_body_begin) if null?
       @transaction.log_activity_begin('app writing out response body')
-      nil
+      :writing_rack_body # Random non-nil ID
     end
 
     # Logs that the application server is done writing out the Rack
@@ -162,8 +163,8 @@ module UnionStationHooks
     # @private
     def log_writing_rack_body_end(id)
       return do_nothing_on_null(:log_writing_rack_body_end) if null?
+      return if id.nil?
       @transaction.log_activity_end('app writing out response body')
-      nil
     end
 
     # Logs that the application server is about to call `#close` on the
@@ -175,11 +176,12 @@ module UnionStationHooks
     # This is automatically called by Passenger's Rack handler.
     #
     # @private
-    # @return An ID to be passed later to {#log_closing_rack_body_end}.
+    # @return An ID to be passed later to {#log_closing_rack_body_end}, or nil
+    #   on error.
     def log_closing_rack_body_begin
       return do_nothing_on_null(:log_closing_rack_body_begin) if null?
       @transaction.log_activity_begin('closing rack body object')
-      nil
+      :closing_rack_body # Random non-nil ID
     end
 
     # Logs that the application server is done calling `#close` on the
@@ -190,6 +192,7 @@ module UnionStationHooks
     # @private
     def log_closing_rack_body_end(id)
       return do_nothing_on_null(:log_closing_rack_body_end) if null?
+      return if id.nil?
       @transaction.log_activity_end('closing rack body object')
     end
   end
