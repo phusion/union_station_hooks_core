@@ -1,6 +1,7 @@
 .DS_Store
 .yardoc
 *.gem
+/.bundle
 /doc
 /coverage
 /ruby_versions.yml
