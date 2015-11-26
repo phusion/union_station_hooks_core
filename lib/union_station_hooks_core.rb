@@ -273,34 +273,34 @@ module UnionStationHooks
 
     # Called by Passenger after loading the application, to check whether or
     # not the application developer forgot to call
-    # {UnionStationHooks.initialize!}
+    # {UnionStationHooks.initialize!}. If so, it logs the problem and
+    # initializes now.
     #
     # @private
-    # @raise RuntimeError
     def check_initialized
-      if should_initialize? && !initialized?
-        return if !config.fetch(:check_initialized, true)
+      return if !should_initialize? || initialized?
+      return if !config.fetch(:check_initialized, true)
 
-        # We end each error message with two newlines so that in Passenger
-        # error reports in the exception class is shown on a new line, after
-        # the message.
-        if defined?(::Rails)
-          raise 'The Union Station hooks are not initialized. Please ensure ' \
-            'that you have an initializer file ' \
-            '`config/initializers/union_station.rb` in which you call ' \
-            "this:\n\n" \
-            "  if defined?(UnionStationHooks)\n" \
-            "    UnionStationHooks.initialize!\n" \
-            "  end\n\n"
-        else
-          raise 'The Union Station hooks are not initialized. Please ensure ' \
-            'that the following code is called during application ' \
-            "startup:\n\n" \
-            "  if defined?(UnionStationHooks)\n" \
-            "    UnionStationHooks.initialize!\n" \
-            "  end\n\n"
-        end
+      if defined?(::Rails)
+        message = 'The Union Station hooks are not initialized. Please ensure ' \
+          'that you have an initializer file ' \
+          '`config/initializers/union_station.rb` in which you call ' \
+          "this:\n\n" \
+          "  if defined?(UnionStationHooks)\n" \
+          "    UnionStationHooks.initialize!\n" \
+          "  end"
+      else
+        message = 'The Union Station hooks are not initialized. Please ensure ' \
+          'that the following code is called during application ' \
+          "startup:\n\n" \
+          "  if defined?(UnionStationHooks)\n" \
+          "    UnionStationHooks.initialize!\n" \
+          "  end"
       end
+
+      STDERR.puts(" *** WARNING: #{message}")
+      initialize!
+      report_internal_information('HOOKS_NOT_INITIALIZED', message)
     end
 
     def now
@@ -354,6 +354,48 @@ module UnionStationHooks
       if config[key].nil? || config[key].empty?
         raise ArgumentError,
           "Union Station hooks configuration option required: #{key}"
+      end
+    end
+
+    def require_simple_json
+      if defined?(PhusionPassenger)
+        begin
+          PhusionPassenger.require_passenger_lib('utils/json')
+          UnionStationHooks.const_set(:SimpleJSON, PhusionPassenger::Utils)
+        rescue LoadError
+        end
+      end
+      if !defined?(UnionStationHooks::SimpleJSON)
+        require_lib('simple_json')
+      end
+    end
+
+    def report_internal_information(type, message, data = nil)
+      data ||= {}
+      data[:app_type] ||= :ruby
+      if defined?(::Rails)
+        data[:framework_type] = :rails
+      end
+
+      if defined?(PhusionPassenger)
+        data[:app_server] = {
+          :id => :passenger,
+          :version => PhusionPassenger::VERSION_STRING
+        }
+      end
+
+      body = SimpleJSON::JSON.generate(
+        :type => type,
+        :message => message,
+        :data => data
+      )
+
+      transaction = context.new_transaction(app_group_name,
+        :internal_information, key)
+      begin
+        transaction.message(body)
+      ensure
+        transaction.close
       end
     end
   end

@@ -33,7 +33,34 @@ describe UnionStationHooks do
   end
 
   after :each do
+    kill_agent
     FileUtils.rm_rf(@tmpdir)
+  end
+
+  def start_agent
+    @username = 'logging'
+    @password = '1234'
+    @dump_dir = "#{@tmpdir}/dump"
+    @socket_filename = "#{@dump_dir}/ust_router.socket"
+    @socket_address  = "unix:#{@socket_filename}"
+    @agent_pid = spawn_ust_router(@socket_filename, @password)
+  end
+
+  def kill_agent
+    if @agent_pid
+      Process.kill('KILL', @agent_pid)
+      Process.waitpid(@agent_pid)
+      File.unlink(@socket_filename)
+      @agent_pid = nil
+    end
+  end
+
+  def prepare_debug_shell
+    Dir.chdir(@tmpdir)
+    puts "You are at #{@tmpdir}."
+    if @agent_pid
+      puts "You can find UstRouter dump files in 'dump'."
+    end
   end
 
   def execute(code)
@@ -233,30 +260,66 @@ describe UnionStationHooks do
       )
     end
 
-    specify 'UnionStationHooks.check_initialized raises an error' do
+    specify 'UnionStationHooks.check_initialized logs an error' do
+      start_agent
+      stderr_file = "#{@tmpdir}/stderr.log"
       code = %Q{
-        begin
-          UnionStationHooks.check_initialized
-          nil
-        rescue RuntimeError => e
-          e.message
-        end
+        STDERR.reopen(#{stderr_file.inspect})
+        UnionStationHooks.config[:union_station_key] = 'any-key'
+        UnionStationHooks.config[:app_group_name] = 'any-app'
+        UnionStationHooks.config[:ust_router_address] = #{@socket_address.inspect}
+        UnionStationHooks.config[:ust_router_password] = #{@password.inspect}
+        UnionStationHooks.check_initialized
+        nil
       }
-      expect(execute(code)).to match(/The Union Station hooks are not initialized/)
+      execute(code)
+      expect(File.read(stderr_file)).to match(/The Union Station hooks are not initialized/)
+      expect(read_dump_file(:internal_information)).to include('HOOKS_NOT_INITIALIZED')
     end
 
-    specify 'UnionStationHooks.check_initialized does not raise an error ' \
+    specify 'UnionStationHooks.check_initialized initializes anyway' do
+      start_agent
+      stderr_file = "#{@tmpdir}/stderr.log"
+      code = %Q{
+        STDERR.reopen(#{stderr_file.inspect})
+        UnionStationHooks.config[:union_station_key] = 'any-key'
+        UnionStationHooks.config[:app_group_name] = 'any-app'
+        UnionStationHooks.config[:ust_router_address] = #{@socket_address.inspect}
+        UnionStationHooks.config[:ust_router_password] = #{@password.inspect}
+        UnionStationHooks.check_initialized
+        UnionStationHooks.initialized?
+      }
+      expect(execute(code)).to be_truthy
+      expect(File.read(stderr_file)).to match(/The Union Station hooks are not initialized/)
+    end
+
+    specify 'UnionStationHooks.check_initialized does not log an error ' \
+            'if :check_initialized is false' do
+      code = %Q{
+        module UnionStationHooks
+          class << self
+            def report_internal_information
+              raise 'Expected UnionStationHooks.report_internal_information ' \
+                'not to be called'
+            end
+          end
+        end
+
+        UnionStationHooks.config[:check_initialized] = false
+        UnionStationHooks.check_initialized
+        nil
+      }
+      execute(code)
+    end
+
+    specify 'UnionStationHooks.check_initialized does not initialize ' \
             'if :check_initialized is false' do
       code = %Q{
         UnionStationHooks.config[:check_initialized] = false
-        begin
-          UnionStationHooks.check_initialized
-          nil
-        rescue RuntimeError => e
-          e.message
-        end
+        UnionStationHooks.check_initialized
+        UnionStationHooks.initialized?
       }
-      expect(execute(code)).to eq(nil)
+      expect(execute(code)).to eq(false)
     end
   end
 

@@ -186,6 +186,7 @@ module UnionStationHooks
       if @@config[:debug]
         UnionStationHooks::Log.debugging = true
       end
+      require_simple_json
       @@initialized = true
     end
   end
