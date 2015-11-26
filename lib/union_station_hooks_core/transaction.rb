@@ -31,9 +31,10 @@ module UnionStationHooks
   class Transaction
     attr_reader :txn_id
 
-    def initialize(connection, txn_id)
+    def initialize(connection, txn_id, delta_monotonic = "0")
       @connection = connection
       @txn_id = txn_id
+      @delta_monotonic = delta_monotonic.to_i
       if connection
         raise ArgumentError, 'Transaction ID required' if txn_id.nil?
         connection.ref
@@ -83,35 +84,37 @@ module UnionStationHooks
     end
 
     def log_activity_begin(name, time = UnionStationHooks.now, extra_info = nil)
+      monotime = Utils.encoded_monotime_now(@delta_monotonic)
       if extra_info
         extra_info_base64 = Utils.base64(extra_info)
       else
         extra_info_base64 = nil
       end
       if time.is_a?(TimePoint)
-        message "BEGIN: #{name} (#{Utils.encoded_timestamp(time)}," \
+        message "BEGIN: #{name} (#{monotime}," \
           "#{time.utime.to_s(36)},#{time.stime.to_s(36)}) " \
           "#{extra_info_base64}"
       else
-        message "BEGIN: #{name} (#{Utils.encoded_timestamp(time)})" \
+        message "BEGIN: #{name} (#{monotime})" \
           " #{extra_info_base64}"
       end
     end
 
     def log_activity_end(name, time = UnionStationHooks.now, has_error = false)
+      monotime = Utils.encoded_monotime_now(@delta_monotonic)
       if time.is_a?(TimePoint)
         if has_error
-          message "FAIL: #{name} (#{Utils.encoded_timestamp(time)}," \
+          message "FAIL: #{name} (#{monotime}," \
             "#{time.utime.to_s(36)},#{time.stime.to_s(36)})"
         else
-          message "END: #{name} (#{Utils.encoded_timestamp(time)}," \
+          message "END: #{name} (#{monotime}," \
             "#{time.utime.to_s(36)},#{time.stime.to_s(36)})"
         end
       else
         if has_error
-          message "FAIL: #{name} (#{Utils.encoded_timestamp(time)})"
+          message "FAIL: #{name} (#{monotime})"
         else
-          message "END: #{name} (#{Utils.encoded_timestamp(time)})"
+          message "END: #{name} (#{monotime})"
         end
       end
     end

@@ -68,7 +68,10 @@ module UnionStationHooks
       txn_id = rack_env['PASSENGER_TXN_ID']
       return nil if !txn_id
 
-      reporter = RequestReporter.new(context, txn_id, app_group_name, key)
+      # Workaround for Ruby < 2.1 support.
+      delta_monotonic = rack_env['PASSENGER_DELTA_MONOTONIC']
+
+      reporter = RequestReporter.new(context, txn_id, app_group_name, key, delta_monotonic)
       return if reporter.null?
 
       rack_env['union_station_hooks'] = reporter

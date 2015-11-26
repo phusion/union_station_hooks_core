@@ -102,7 +102,7 @@ module UnionStationHooks
     # in the {RequestReporter class description}.
     #
     # @api private
-    def initialize(context, txn_id, app_group_name, key)
+    def initialize(context, txn_id, app_group_name, key, delta_monotonic)
       raise ArgumentError, 'Transaction ID must be given' if txn_id.nil?
       raise ArgumentError, 'App group name must be given' if app_group_name.nil?
       raise ArgumentError, 'Union Station key must be given' if key.nil?
@@ -110,6 +110,7 @@ module UnionStationHooks
       @txn_id = txn_id
       @app_group_name = app_group_name
       @key = key
+      @delta_monotonic = delta_monotonic
       @transaction = continue_transaction
       @next_view_rendering_number = 1
       @next_user_activity_number = 1
@@ -138,7 +139,7 @@ module UnionStationHooks
 
     def continue_transaction
       @context.continue_transaction(@txn_id, @app_group_name,
-        :requests, @key)
+        :requests, @key, @delta_monotonic)
     end
 
     # Called when one of the methods return early upon detecting null
