@@ -89,14 +89,18 @@ module UnionStationHooks
       end
     end
 
-    def encoded_monotime_now(delta_monotonic)
-      if Process.const_defined?(:CLOCK_MONOTONIC)
-        timestamp = (Process.clock_gettime(Process::CLOCK_MONOTONIC) * 1_000_000).to_i
-      else
+    if Process.const_defined?(:CLOCK_MONOTONIC)
+      def encoded_monotime_now(delta_monotonic)
+        time = Process.clock_gettime(Process::CLOCK_MONOTONIC)
+        timestamp = (time * 1_000_000).to_i
+        timestamp.to_s(36)
+      end
+    else
+      def encoded_monotime_now(delta_monotonic)
         time = Time.now
         timestamp = time.to_i * 1_000_000 + time.usec - delta_monotonic
+        timestamp.to_s(36)
       end
-      timestamp.to_s(36)
     end
 
     def encoded_timestamp(time = Time.now)
