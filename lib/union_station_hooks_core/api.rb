@@ -68,8 +68,12 @@ module UnionStationHooks
       txn_id = rack_env['PASSENGER_TXN_ID']
       return nil if !txn_id
 
-      # Workaround for Ruby < 2.1 support.
+      # Workaround for Ruby < 2.1 support where there is no function for querying
+      # the monotonic time.
       delta_monotonic = rack_env['PASSENGER_DELTA_MONOTONIC']
+      if delta_monotonic
+        delta_monotonic = delta_monotonic.to_i
+      end
 
       reporter = RequestReporter.new(context, txn_id, app_group_name, key, delta_monotonic)
       return if reporter.null?

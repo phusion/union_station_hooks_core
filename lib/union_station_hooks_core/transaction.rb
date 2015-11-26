@@ -31,10 +31,10 @@ module UnionStationHooks
   class Transaction
     attr_reader :txn_id
 
-    def initialize(connection, txn_id, delta_monotonic = "0")
+    def initialize(connection, txn_id, delta_monotonic = 0)
       @connection = connection
       @txn_id = txn_id
-      @delta_monotonic = delta_monotonic.to_i
+      @delta_monotonic = delta_monotonic
       if connection
         raise ArgumentError, 'Transaction ID required' if txn_id.nil?
         connection.ref
