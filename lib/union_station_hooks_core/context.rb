@@ -175,7 +175,7 @@ module UnionStationHooks
       end
     end
 
-    def continue_transaction(txn_id, group_name, category, key, delta_monotonic = "0")
+    def continue_transaction(txn_id, group_name, category, key, delta_monotonic = 0)
       if !@server_address
         return Transaction.new(nil, nil)
       elsif !txn_id || txn_id.empty?
