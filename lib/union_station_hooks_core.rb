@@ -299,6 +299,7 @@ module UnionStationHooks
       end
 
       STDERR.puts(" *** WARNING: #{message}")
+      @@config[:initialize_from_check] = true
       initialize!
       report_internal_information('HOOKS_NOT_INITIALIZED', message)
     end
