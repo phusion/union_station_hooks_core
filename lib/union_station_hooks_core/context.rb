@@ -59,10 +59,8 @@ module UnionStationHooks
       @server_address = ust_router_address
       @username = username
       @password = password
-      if node_name && !node_name.empty?
-        @node_name = node_name
-      else
-        @node_name = `hostname`.strip
+      if node_name && node_name.empty?
+        @node_name = nil
       end
 
       # This mutex protects the following instance variables, but
@@ -271,7 +269,11 @@ module UnionStationHooks
     end
 
     def handshake_initialization(channel)
-      channel.write('init', @node_name)
+      if @node_name
+        channel.write('init', @node_name)
+      else
+        channel.write('init')
+      end
       process_ust_router_reply(channel,
         'UstRouter client initialization error')
     end
