@@ -12,5 +12,5 @@
   command: rvm-exec ruby-1.9.3-p547 bundle exec ruby
 - name: Ruby 2.2.1
   command: rvm-exec ruby-2.2.1 ruby
-- name: JRuby 9.0.0.0
-  command: rvm-exec jruby-9.0.0.0.pre1 ruby --dev
+- name: JRuby 9.0.4.0
+  command: rvm-exec jruby-9.0.4.0 ruby --dev
