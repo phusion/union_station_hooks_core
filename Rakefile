@@ -42,7 +42,11 @@ task "spec:travis" do
   if !ENV['PASSENGER_CONFIG']
     Rake::Task['travis:install_passenger'].invoke
   end
-  sh 'cp ruby_versions.yml.travis ruby_versions.yml'
+  if ENV['TRAVIS_WITH_SUDO']
+    sh 'cp ruby_versions.yml.travis-with-sudo ruby_versions.yml'
+  else
+    sh 'cp ruby_versions.yml.travis ruby_versions.yml'
+  end
   Rake::Task['spec'].invoke
 end
 
