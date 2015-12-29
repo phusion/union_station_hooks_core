@@ -26,6 +26,7 @@ require 'tmpdir'
 require 'fileutils'
 require 'base64'
 require 'digest/md5'
+UnionStationHooks.require_lib 'log'
 
 module UnionStationHooks
 

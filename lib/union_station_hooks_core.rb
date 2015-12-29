@@ -56,6 +56,7 @@ end
 #  * {UnionStationHooks.begin_rack_request} and
 #    {UnionStationHooks.end_rack_request}
 #  * {UnionStationHooks::RequestReporter}
+#  * {UnionStationHooks.log_exception}
 #
 # ## Rack example
 #
@@ -318,6 +319,12 @@ module UnionStationHooks
 
     def end_rack_request(_rack_env,
         _uncaught_exception_raised_during_request = false)
+      # When `initialize!` is called, the definition in
+      # `api.rb` will override this implementation.
+      nil
+    end
+
+    def log_exception(_exception)
       # When `initialize!` is called, the definition in
       # `api.rb` will override this implementation.
       nil

@@ -166,6 +166,10 @@ module UnionStationHooks
 
     # Logs an exception that occurred during a request.
     #
+    # If you want to use an exception that occurred outside the
+    # request/response cycle, e.g. an exception that occurred in a thread,
+    # use {UnionStationHooks.log_exception} instead.
+    #
     # If {#log_controller_action_block} or {#log_controller_action}
     # was called during the same request, then the information passed to
     # those methods will be included in the exception report.

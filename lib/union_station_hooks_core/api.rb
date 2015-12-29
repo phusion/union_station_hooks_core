@@ -118,6 +118,34 @@ module UnionStationHooks
       end
     end
 
+    # Logs an exception that did NOT occur during a request.
+    #
+    # This method should be used for logging exceptions outside the
+    # request-response cycle, e.g. exceptions in threads. If you want to
+    # log a request that occurred during a request, use
+    # {RequestReporter#log_exception} instead. That method will also log
+    # any related request-specific information, while this method does not.
+    #
+    # @param [Exception] exception
+    # @since 2.1.0
+    def log_exception(exception)
+      transaction = context.new_transaction(app_group_name, :exceptions, key)
+      begin
+        return do_nothing_on_null(:log_exception) if transaction.null?
+
+        base64_message = exception.message
+        base64_message = exception.to_s if base64_message.empty?
+        base64_message = Utils.base64(base64_message)
+        base64_backtrace = Utils.base64(exception.backtrace.join("\n"))
+
+        transaction.message("Message: #{base64_message}")
+        transaction.message("Class: #{exception.class.name}")
+        transaction.message("Backtrace: #{base64_backtrace}")
+      ensure
+        transaction.close
+      end
+    end
+
     # Returns an opaque object (a {TimePoint}) that represents a collection
     # of metrics about the current time.
     #
