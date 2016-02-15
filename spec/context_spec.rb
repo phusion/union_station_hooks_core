@@ -91,8 +91,7 @@ describe Context do
         transaction.close
       end
 
-      wait_for_dump_file_existance
-      expect(read_dump_file).to match(/hello/)
+      eventually_expect_dump_file_to_match(/hello/)
 
       transaction = @context.new_transaction('foobar', :processes, 'any-key')
       expect(transaction).not_to be_null

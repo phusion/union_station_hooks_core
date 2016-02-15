@@ -133,11 +133,7 @@ describe 'Passenger integration' do
 
     start_app
     expect(get('/')).to eq("vendored: true\n")
-    wait_for_dump_file_existance
-    eventually do
-      read_dump_file.include?(
-        "Controller action: HomeController#index\n")
-    end
+    eventually_expect_dump_file_to_match(/Controller action: HomeController#index\n/)
   end
 
   it 'allows overriding the vendored Union Station hooks bundled with Passenger' do
@@ -165,11 +161,7 @@ describe 'Passenger integration' do
 
     start_app
     expect(get('/')).to eq("vendored: false\n")
-    wait_for_dump_file_existance
-    eventually do
-      read_dump_file.include?(
-        "Controller action: HomeController#index\n")
-    end
+    eventually_expect_dump_file_to_match(/Controller action: HomeController#index\n/)
   end
 
   describe "the legacy 'PhusionPassenger.install_framework_extensions!' call" do
@@ -208,11 +200,7 @@ describe 'Passenger integration' do
         "foo: nil\n" \
         "bar: nil\n"
       )
-      wait_for_dump_file_existance
-      eventually do
-        read_dump_file.include?(
-          "Controller action: HomeController#index\n")
-      end
+      eventually_expect_dump_file_to_match(/Controller action: HomeController#index\n/)
     end
 
     it "is supported with a 'user_options' argument" do
@@ -226,10 +214,7 @@ describe 'Passenger integration' do
         "foo: 1234\n" \
         "bar: 5678\n"
       )
-      eventually do
-        read_dump_file.include?(
-          "Controller action: HomeController#index\n")
-      end
+      eventually_expect_dump_file_to_match(/Controller action: HomeController#index\n/)
     end
   end
 
