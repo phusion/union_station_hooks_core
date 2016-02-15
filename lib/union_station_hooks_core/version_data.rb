@@ -1,5 +1,5 @@
 #  Union Station - https://www.unionstationapp.com/
-#  Copyright (c) 2010-2015 Phusion Holding B.V.
+#  Copyright (c) 2010-2016 Phusion Holding B.V.
 #
 #  "Union Station" and "Passenger" are trademarks of Phusion Holding B.V.
 #
@@ -39,6 +39,6 @@
 {
   :major  => 2,
   :minor  => 1,
-  :tiny   => 0,
-  :string => '2.1.0'
+  :tiny   => 1,
+  :string => '2.1.1'
 }
