@@ -88,9 +88,10 @@ describe Context do
       begin
         transaction.message("hello")
       ensure
-        transaction.close(true)
+        transaction.close
       end
 
+      wait_for_dump_file_existance
       expect(read_dump_file).to match(/hello/)
 
       transaction = @context.new_transaction('foobar', :processes, 'any-key')
@@ -98,10 +99,11 @@ describe Context do
       begin
         transaction.message('world')
       ensure
-        transaction.close(true)
+        transaction.close
       end
 
-      expect(read_dump_file("processes")).to match(/world/)
+      wait_for_dump_file_existance('processes')
+      expect(read_dump_file('processes')).to match(/world/)
     end
 
     it 'reestablishes the connection with the UstRouter when disconnected' do
@@ -110,7 +112,7 @@ describe Context do
 
       transaction = new_transaction
       expect(transaction).not_to be_null
-      transaction.close(true)
+      transaction.close
 
       connection = @context.instance_variable_get(:'@connection')
       connection.synchronize do
@@ -121,11 +123,12 @@ describe Context do
       transaction = new_transaction
       expect(transaction).not_to be_null
       begin
-        transaction.message("hello")
+        transaction.message('hello')
       ensure
-        transaction.close(true)
+        transaction.close
       end
 
+      wait_for_dump_file_existance
       expect(read_dump_file).to match(/hello/)
     end
 
@@ -162,12 +165,13 @@ describe Context do
         begin
           transaction2.message('world')
         ensure
-          transaction2.close(true)
+          transaction2.close
         end
       ensure
-        transaction.close(true)
+        transaction.close
       end
 
+      wait_for_dump_file_existance('processes')
       expect(read_dump_file('processes')).to \
         match(/#{Regexp.escape transaction.txn_id} .* hello$/)
       expect(read_dump_file('processes')).to \
@@ -180,11 +184,11 @@ describe Context do
 
       transaction = new_transaction
       expect(transaction).not_to be_null
-      transaction.close(true)
+      transaction.close
       transaction2 = @context2.continue_transaction(transaction.txn_id,
         'foobar', :requests, 'any-key')
       expect(transaction2).not_to be_null
-      transaction2.close(true)
+      transaction2.close
 
       connection = @context2.instance_variable_get(:'@connection')
       connection.synchronize do
@@ -198,9 +202,10 @@ describe Context do
       begin
         transaction2.message('hello')
       ensure
-        transaction2.close(true)
+        transaction2.close
       end
 
+      wait_for_dump_file_existance
       expect(read_dump_file).to match(/hello/)
     end
 
@@ -263,10 +268,11 @@ describe Context do
     begin
       transaction2.message('world')
     ensure
-      transaction2.close(true)
+      transaction2.close
     end
-    transaction.close(true)
+    transaction.close
 
+    wait_for_dump_file_existance
     expect(read_dump_file).to match(/hello/)
     expect(read_dump_file).to match(/world/)
   end

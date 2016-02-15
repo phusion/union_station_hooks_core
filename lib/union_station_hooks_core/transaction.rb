@@ -125,7 +125,7 @@ module UnionStationHooks
       log_activity_end(name, end_time, has_error)
     end
 
-    def close(should_flush_to_disk = false)
+    def close
       return if !@connection
 
       @connection.synchronize do
@@ -140,9 +140,6 @@ module UnionStationHooks
               Utils.encoded_timestamp, true)
             Utils.process_ust_router_reply(@connection.channel,
               "Error handling reply for 'closeTransaction' message")
-            if should_flush_to_disk
-              flush_to_disk
-            end
           end
         ensure
           @connection.unref
@@ -174,12 +171,6 @@ module UnionStationHooks
     rescue Exception => e
       @connection.disconnect
       raise e
-    end
-
-    def flush_to_disk
-      @connection.channel.write('flush')
-      Utils.process_ust_router_reply(@connection.channel,
-        "Error handling reply for 'flush' message")
     end
   end
 end
