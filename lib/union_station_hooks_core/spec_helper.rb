@@ -220,6 +220,24 @@ module UnionStationHooks
       end
     end
 
+    # Assert that the dump file eventually exists and that its contents
+    # eventually match the given regex.
+    def eventually_expect_dump_file_to_match(regex, category = 'requests')
+      wait_for_dump_file_existance(category)
+      eventually do
+        read_dump_file(category) =~ regex
+      end
+    end
+
+    # Assert that the dump file (if it ever exists) its contents will never match
+    # the given regex.
+    def never_expect_dump_file_to_match(regex, category = 'requests')
+      should_never_happen do
+        File.exist?(dump_file_path(category)) &&
+          read_dump_file(category) =~ regex
+      end
+    end
+
     # Makes `UnionStationHooks::Log.warn` not print anything.
     def silence_warnings
       UnionStationHooks::Log.warn_callback = lambda { |_message| }

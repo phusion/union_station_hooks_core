@@ -95,11 +95,8 @@ describe Transaction do
       create_context
       create_transaction
       @transaction.message('hello')
-      @transaction.close(true)
-      eventually do
-        File.exist?(dump_file_path) &&
-          read_dump_file.include?('hello')
-      end
+      @transaction.close
+      eventually_expect_dump_file_to_match(/hello/)
     end
 
     it "enters null mode upon encountering an I/O error" do
@@ -116,10 +113,7 @@ describe Transaction do
       @transaction.message('hello')
       expect(@transaction).to be_null
 
-      should_never_happen do
-        File.exist?(dump_file_path) &&
-          read_dump_file.include?('hello')
-      end
+      never_expect_dump_file_to_match(/hello/)
     end
   end
 
@@ -182,10 +176,7 @@ describe Transaction do
       @transaction.log_activity_begin('hello')
       expect(@transaction).to be_null
 
-      should_never_happen do
-        File.exist?(dump_file_path) &&
-          read_dump_file.include?('hello')
-      end
+      never_expect_dump_file_to_match(/hello/)
     end
   end
 
@@ -271,10 +262,7 @@ describe Transaction do
       @transaction.log_activity_end('hello')
       expect(@transaction).to be_null
 
-      should_never_happen do
-        File.exist?(dump_file_path) &&
-          read_dump_file.include?('hello')
-      end
+      never_expect_dump_file_to_match(/hello/)
     end
   end
 end

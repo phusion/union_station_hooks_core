@@ -102,8 +102,7 @@ describe Context do
         transaction.close
       end
 
-      wait_for_dump_file_existance('processes')
-      expect(read_dump_file('processes')).to match(/world/)
+      eventually_expect_dump_file_to_match(/world/, 'processes')
     end
 
     it 'reestablishes the connection with the UstRouter when disconnected' do
@@ -128,8 +127,7 @@ describe Context do
         transaction.close
       end
 
-      wait_for_dump_file_existance
-      expect(read_dump_file).to match(/hello/)
+      eventually_expect_dump_file_to_match(/hello/)
     end
 
     it 'does not reconnect to the UstRouter for a short ' \
@@ -171,11 +169,12 @@ describe Context do
         transaction.close
       end
 
-      wait_for_dump_file_existance('processes')
-      expect(read_dump_file('processes')).to \
-        match(/#{Regexp.escape transaction.txn_id} .* hello$/)
-      expect(read_dump_file('processes')).to \
-        match(/#{Regexp.escape transaction.txn_id} .* world$/)
+      eventually_expect_dump_file_to_match(
+        /#{Regexp.escape transaction.txn_id} .* hello$/,
+        'processes')
+      eventually_expect_dump_file_to_match(
+        /#{Regexp.escape transaction.txn_id} .* world$/,
+        'processes')
     end
 
     it 'reestablishes the connection with the UstRouter when disconnected' do
@@ -205,8 +204,7 @@ describe Context do
         transaction2.close
       end
 
-      wait_for_dump_file_existance
-      expect(read_dump_file).to match(/hello/)
+      eventually_expect_dump_file_to_match(/hello/)
     end
 
     it 'does not reconnect to the UstRouter for a short period of time ' \
@@ -272,9 +270,8 @@ describe Context do
     end
     transaction.close
 
-    wait_for_dump_file_existance
-    expect(read_dump_file).to match(/hello/)
-    expect(read_dump_file).to match(/world/)
+    eventually_expect_dump_file_to_match(/hello/)
+    eventually_expect_dump_file_to_match(/world/)
   end
 
   it 'only creates null Transaction objects if no server address is given' do
