@@ -39,6 +39,7 @@ module SimpleJSON
 # Run tests by executing this file directly. Pipe standard input to the script to have it
 # parsed as JSON and to display the result in Ruby.
 #
+# @private
 class JSON
   def self.parse(data) new(data).parse end
 
