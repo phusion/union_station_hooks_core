@@ -173,7 +173,7 @@ module UnionStationHooks
       end
     end
 
-    def continue_transaction(txn_id, group_name, category, key, delta_monotonic = 0)
+    def continue_transaction(txn_id, group_name, category, key)
       if !@server_address
         return Transaction.new(nil, nil)
       elsif !txn_id || txn_id.empty?
@@ -209,7 +209,7 @@ module UnionStationHooks
               Utils.encoded_timestamp,
               key,
               true)
-            return Transaction.new(@connection, txn_id, delta_monotonic)
+            return Transaction.new(@connection, txn_id)
           rescue SystemCallError, IOError
             @connection.disconnect
             UnionStationHooks::Log.warn(

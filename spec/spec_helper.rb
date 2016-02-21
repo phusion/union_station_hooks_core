@@ -140,7 +140,7 @@ module SpecHelper
         $reporter =
           UnionStationHooks::RequestReporter.new(UnionStationHooks.context,
             $txn_id, UnionStationHooks.app_group_name,
-            UnionStationHooks.key, 0)
+            UnionStationHooks.key)
         Thread.current[:union_station_hooks] = $reporter
       end
 

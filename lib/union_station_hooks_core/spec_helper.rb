@@ -116,6 +116,8 @@ module UnionStationHooks
 
     def initialize_ush_api
       UnionStationHooks.require_lib('api')
+      UnionStationHooks.instance_variable_set(:@mono_mutex, Mutex.new)
+      UnionStationHooks.instance_variable_set(:@delta_monotonic, 0)
     end
 
     def initialize_debugging

@@ -330,6 +330,12 @@ module UnionStationHooks
       nil
     end
 
+    def get_delta_monotonic
+      # When `initialize!` is called, the definition in
+      # `api.rb` will override this implementation.
+      nil
+    end
+
   private
 
     def finalize_and_validate_config

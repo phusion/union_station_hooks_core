@@ -31,10 +31,9 @@ module UnionStationHooks
   class Transaction
     attr_reader :txn_id
 
-    def initialize(connection, txn_id, delta_monotonic = 0)
+    def initialize(connection, txn_id)
       @connection = connection
       @txn_id = txn_id
-      @delta_monotonic = delta_monotonic
       if connection
         raise ArgumentError, 'Transaction ID required' if txn_id.nil?
         connection.ref
@@ -84,37 +83,35 @@ module UnionStationHooks
     end
 
     def log_activity_begin(name, time = UnionStationHooks.now, extra_info = nil)
-      monotime = Utils.encoded_monotime_now(@delta_monotonic)
       if extra_info
         extra_info_base64 = Utils.base64(extra_info)
       else
         extra_info_base64 = nil
       end
       if time.is_a?(TimePoint)
-        message "BEGIN: #{name} (#{monotime}," \
+        message "BEGIN: #{name} (#{time.monotime.to_s(36)}," \
           "#{time.utime.to_s(36)},#{time.stime.to_s(36)}) " \
           "#{extra_info_base64}"
       else
-        message "BEGIN: #{name} (#{monotime})" \
+        message "BEGIN: #{name} (#{Utils.monotime_usec_from_time(time).to_s(36)})" \
           " #{extra_info_base64}"
       end
     end
 
     def log_activity_end(name, time = UnionStationHooks.now, has_error = false)
-      monotime = Utils.encoded_monotime_now(@delta_monotonic)
       if time.is_a?(TimePoint)
         if has_error
-          message "FAIL: #{name} (#{monotime}," \
+          message "FAIL: #{name} (#{time.monotime.to_s(36)}," \
             "#{time.utime.to_s(36)},#{time.stime.to_s(36)})"
         else
-          message "END: #{name} (#{monotime}," \
+          message "END: #{name} (#{time.monotime.to_s(36)}," \
             "#{time.utime.to_s(36)},#{time.stime.to_s(36)})"
         end
       else
         if has_error
-          message "FAIL: #{name} (#{monotime})"
+          message "FAIL: #{name} (#{Utils.monotime_usec_from_time(time).to_s(36)})"
         else
-          message "END: #{name} (#{monotime})"
+          message "END: #{name} (#{Utils.monotime_usec_from_time(time).to_s(36)})"
         end
       end
     end

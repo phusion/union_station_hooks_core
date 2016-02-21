@@ -70,12 +70,10 @@ module UnionStationHooks
 
       # Workaround for Ruby < 2.1 support where there is no function for querying
       # the monotonic time.
-      delta_monotonic = rack_env['PASSENGER_DELTA_MONOTONIC']
-      if delta_monotonic
-        delta_monotonic = delta_monotonic.to_i
-      end
+      delta_monotonic_env = rack_env['PASSENGER_DELTA_MONOTONIC']
+      set_delta_monotonic(delta_monotonic_env.to_i) if delta_monotonic_env
 
-      reporter = RequestReporter.new(context, txn_id, app_group_name, key, delta_monotonic)
+      reporter = RequestReporter.new(context, txn_id, app_group_name, key)
       return if reporter.null?
 
       rack_env['union_station_hooks'] = reporter
@@ -149,14 +147,15 @@ module UnionStationHooks
     # Returns an opaque object (a {TimePoint}) that represents a collection
     # of metrics about the current time.
     #
-    # Various API methods expect you to provide timing information. They
-    # accept standard Ruby `Time` objects, but it is generally better to
-    # pass `TimePoint` objects. Unlike the standard Ruby `Time` object,
-    # which only contains the wall clock time (the real time), `TimePoint`
-    # may contain additional timing information such as CPU time, time
-    # spent in userspace and kernel space, time spent context switching,
-    # etc. The exact information contained in the object is operating
-    # system specific, hence why the object is meant to be opaque.
+    # This TimePoint samples monotonic time (with a fallback to wall clock
+    # time) as well as CPU time, time spent in userspace and kernel space,
+    # time spent context switching, etc. The exact information contained 
+    # in the object is operating system specific, hence the object is opaque.
+    #
+    # You should use it for the various API methods that require timing
+    # information. Those methods also accept standard Ruby `Time` objects, 
+    # but we strongly recommended against doing this, because wall clock
+    # time can jump forwards and backwards, which may create issues.
     #
     # See {RequestReporter#log_controller_action} for an example of
     # an API method which expects timing information.
@@ -165,18 +164,27 @@ module UnionStationHooks
     # information is supposed to be obtained by calling
     # `UnionStationHooks.now`.
     #
-    # In all API methods that expect a `TimePoint`, you can also pass a
-    # normal Ruby `Time` object instead. But if you do that, the logged
-    # timing information will be less detailed. Only do this if you cannot
-    # obtain a `TimePoint` object for some reason.
-    #
     # @return [TimePoint]
     def now
+      monotime_usec = Utils.monotime_usec_now
       pt = Utils.process_times
-      TimePoint.new(Time.now, pt.utime, pt.stime)
+      TimePoint.new(monotime_usec, pt.utime, pt.stime)
+    end
+
+    # Returns a best-estimate delta (usec) between the wallclock and 
+    # the monotonic clock (updated every request), such that: 
+    # time_monotic_usec = time_wallclock_usec - delta
+    def get_delta_monotonic
+      @mono_mutex.synchronize { @delta_monotonic }
     end
 
   private
+
+    # Although the de-facto state seems to be that reading/writing instance variables
+    # is MT-safe, it's not guaranteed so better safe than sorry here.
+    def set_delta_monotonic(val)
+      @mono_mutex.synchronize { @delta_monotonic = val }
+    end
 
     def create_context
       require_lib('context')
@@ -222,6 +230,8 @@ module UnionStationHooks
         UnionStationHooks::Log.debugging = true
       end
       require_simple_json
+      @mono_mutex = Mutex.new
+      @delta_monotonic = 0
       @@initialized = true
     end
   end

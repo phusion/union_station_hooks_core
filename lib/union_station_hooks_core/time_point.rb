@@ -26,28 +26,14 @@ module UnionStationHooks
   # See {UnionStationHooks.now} for more information.
   class TimePoint
     # @api private
-    attr_reader :time, :utime, :stime
+    attr_reader :monotime, :utime, :stime
 
     # @api private
-    def initialize(time, utime, stime)
-      @time = time
+    def initialize(monotime, utime, stime)
+      @monotime = monotime
       @utime = utime
       @stime = stime
     end
 
-    # @api private
-    def usec_timestamp
-      @time.to_i * 1_000_000 + @time.usec
-    end
-
-    # @api private
-    def usec
-      @time.usec
-    end
-
-    # @api private
-    def to_i
-      @time.to_i
-    end
   end
 end

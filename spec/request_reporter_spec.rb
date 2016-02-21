@@ -67,6 +67,25 @@ shared_examples_for 'a RequestReporter' do
     puts "You can find UstRouter dump files in 'dump'."
   end
 
+  # returns array containing all strings (within s_data) that 
+  # start with s_start and end with s_end 
+  def get_all_occurrences(s_start, s_end, s_data)
+    result = Array.new
+
+    idx_end = 0
+    while true
+      idx_begin = s_data.index(s_start, idx_end)
+      break if idx_begin.nil?
+
+      idx_end = s_data.index(s_end, idx_begin)
+      break if idx_end.nil?
+
+      result.push(s_data[idx_begin..idx_end])
+    end
+
+    return result
+  end
+
   describe '#log_request_begin' do
     it "logs the 'app request handler processing' activity's begin" do
       code = %Q{
@@ -326,6 +345,40 @@ shared_examples_for 'a RequestReporter' do
       end
       eventually do
         read_dump_file.include?('END: framework request processing (')
+      end
+    end
+
+    # for issue where the time arguments were ignored
+    it "logs actual time arguments in 'framework request processing'" do
+      code = %Q{
+        UnionStationHooks.initialize!
+        reporter = create_reporter
+        begin_time = UnionStationHooks.now
+        end_time = UnionStationHooks.now
+        reporter.log_controller_action(
+          :begin_time => begin_time,
+          :end_time => end_time
+        )
+        reporter.log_controller_action(
+          :begin_time => begin_time,
+          :end_time => end_time
+        )
+      }
+      start_agent
+      execute(code)
+      wait_for_dump_file_existance
+      eventually do
+        datfile = read_dump_file
+
+        logs_begin = get_all_occurrences('BEGIN: framework request processing (', "\n", datfile)
+        logs_end = get_all_occurrences('END: framework request processing (', "\n", datfile)
+
+        if logs_begin.length == 2 && logs_end.length == 2
+          # At this point we know for sure the strings must match, so we can use expect.
+          # The advantage is that we can see the diff (and don't need to wait for timeout).
+          expect(logs_begin[0]).to eq(logs_begin[1])
+          expect(logs_end[0]).to eq(logs_end[1])
+        end
       end
     end
 

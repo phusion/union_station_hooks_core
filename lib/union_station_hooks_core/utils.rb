@@ -90,20 +90,22 @@ module UnionStationHooks
     end
 
     if Process.const_defined?(:CLOCK_MONOTONIC)
-      def encoded_monotime_now(delta_monotonic)
-        time = Process.clock_gettime(Process::CLOCK_MONOTONIC)
-        timestamp = (time * 1_000_000).to_i
-        timestamp.to_s(36)
+      def monotime_usec_now
+        Process.clock_gettime(Process::CLOCK_MONOTONIC, :microsecond)
       end
     else
-      def encoded_monotime_now(delta_monotonic)
-        time = Time.now
-        timestamp = time.to_i * 1_000_000 + time.usec - delta_monotonic
-        timestamp.to_s(36)
+      # Workaround for approximating the monotonic clock
+      def monotime_usec_now
+        monotime_usec_from_time
       end
     end
 
-    def encoded_timestamp(time = Time.now)
+    def monotime_usec_from_time(time = Time.now)
+        timestamp = time.to_i * 1_000_000 + time.usec - UnionStationHooks.get_delta_monotonic
+    end
+
+    def encoded_timestamp
+      time = Time.now
       timestamp = time.to_i * 1_000_000 + time.usec
       timestamp.to_s(36)
     end
