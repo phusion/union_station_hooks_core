@@ -101,7 +101,7 @@ module UnionStationHooks
     end
 
     def monotime_usec_from_time(time = Time.now)
-        timestamp = time.to_i * 1_000_000 + time.usec - UnionStationHooks.get_delta_monotonic
+      timestamp = time.to_i * 1_000_000 + time.usec - UnionStationHooks.get_delta_monotonic
     end
 
     def encoded_timestamp
