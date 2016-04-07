@@ -120,7 +120,7 @@ module UnionStationHooks
     #
     # This method should be used for logging exceptions outside the
     # request-response cycle, e.g. exceptions in threads. If you want to
-    # log a request that occurred during a request, use
+    # log an exception that occurred during a request, use
     # {RequestReporter#log_exception} instead. That method will also log
     # any related request-specific information, while this method does not.
     #
@@ -149,11 +149,11 @@ module UnionStationHooks
     #
     # This TimePoint samples monotonic time (with a fallback to wall clock
     # time) as well as CPU time, time spent in userspace and kernel space,
-    # time spent context switching, etc. The exact information contained 
+    # time spent context switching, etc. The exact information contained
     # in the object is operating system specific, hence the object is opaque.
     #
     # You should use it for the various API methods that require timing
-    # information. Those methods also accept standard Ruby `Time` objects, 
+    # information. Those methods also accept standard Ruby `Time` objects,
     # but we strongly recommended against doing this, because wall clock
     # time can jump forwards and backwards, which may create issues.
     #
@@ -171,8 +171,8 @@ module UnionStationHooks
       TimePoint.new(monotime_usec, pt.utime, pt.stime)
     end
 
-    # Returns a best-estimate delta (usec) between the wallclock and 
-    # the monotonic clock (updated every request), such that: 
+    # Returns a best-estimate delta (usec) between the wallclock and
+    # the monotonic clock (updated every request), such that:
     # time_monotic_usec = time_wallclock_usec - delta
     def get_delta_monotonic
       @mono_mutex.synchronize { @delta_monotonic }
