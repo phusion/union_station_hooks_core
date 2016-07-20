@@ -187,7 +187,8 @@ module UnionStationHooks
     # supports application servers besides Passenger.
     def should_initialize?
       if defined?(PhusionPassenger)
-        PhusionPassenger::App.options['analytics']
+        PhusionPassenger::App.options['analytics'] ||
+          PhusionPassenger::App.options['analytics_support']
       else
         false
       end
