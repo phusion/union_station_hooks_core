@@ -39,6 +39,6 @@
 {
   :major  => 2,
   :minor  => 1,
-  :tiny   => 1,
-  :string => '2.1.1'
+  :tiny   => 2,
+  :string => '2.1.2'
 }
