@@ -114,6 +114,7 @@ module SpecHelper
 
     result_path = "#{@tmpdir}/result.yml"
     main_lib_path = "#{UnionStationHooks::LIBROOT}/union_station_hooks_core"
+    passenger_simulator_path = "#{UnionStationHooks::ROOT}/spec/passenger_simulator"
     runner_path = "#{@tmpdir}/runner.rb"
     runner = %Q{
       require 'yaml'
@@ -128,6 +129,7 @@ module SpecHelper
         end
       end
       require #{main_lib_path.inspect}
+      require #{passenger_simulator_path.inspect} if #{@simulate_load_passenger}
 
       UnionStationHooks.config[:union_station_key] = 'any-key'
       UnionStationHooks.config[:app_group_name] = 'any-app'
@@ -192,4 +194,8 @@ end
 RSpec.configure do |config|
   config.include(UnionStationHooks::SpecHelper)
   config.include(SpecHelper)
+
+  config.before(:each) do
+    @simulate_load_passenger = true
+  end
 end

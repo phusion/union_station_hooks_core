@@ -1,5 +1,5 @@
 #  Union Station - https://www.unionstationapp.com/
-#  Copyright (c) 2015 Phusion Holding B.V.
+#  Copyright (c) 2015-2016 Phusion Holding B.V.
 #
 #  "Union Station" and "Passenger" are trademarks of Phusion Holding B.V.
 #
@@ -69,6 +69,7 @@ describe UnionStationHooks do
 
     result_path = "#{@tmpdir}/result"
     main_lib_path = "#{UnionStationHooks::LIBROOT}/union_station_hooks_core"
+    passenger_simulator_path = "#{UnionStationHooks::ROOT}/spec/passenger_simulator"
     runner_path = "#{@tmpdir}/runner.rb"
     runner = %Q{
       if ENV['COVERAGE']
@@ -79,6 +80,7 @@ describe UnionStationHooks do
       end
 
       require #{main_lib_path.inspect}
+      require #{passenger_simulator_path.inspect} if #{@simulate_load_passenger}
       UnionStationHooks.config[:union_station_key] = 'any-key'
       UnionStationHooks.config[:app_group_name] = 'any-app'
       UnionStationHooks.config[:ust_router_address] = 'tcp://not-relevant:1234'
@@ -107,11 +109,27 @@ describe UnionStationHooks do
     expect(UnionStationHooks.vendored?).to be_falsey
   end
 
-  it 'allows initialization when Passenger is not loaded' do
+  it 'does not allow initialization when Passenger is not loaded' do
+    @simulate_load_passenger = false
+    code = %Q{
+      UnionStationHooks.should_initialize?
+    }
+    expect(execute(code)).to be_falsey
+  end
+
+  it 'allows initialization when Passenger is loaded and the "analytics" option is enabled' do
     code = %Q{
       UnionStationHooks.should_initialize?
     }
     expect(execute(code)).to be_truthy
+  end
+
+  it 'does not allow initialization when Passenger is loaded and the "analytics" option is disabled' do
+    code = %Q{
+      PhusionPassenger::App.options['analytics'] = false
+      UnionStationHooks.should_initialize?
+    }
+    expect(execute(code)).to be_falsey
   end
 
   describe '#initialize!' do

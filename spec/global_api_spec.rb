@@ -95,6 +95,17 @@ shared_examples_for 'API methods on the UnionStationHooks module' do
         read_dump_file('exceptions') =~ /Backtrace: .+/
       end
     end
+
+    it 'does nothing when not initialized' do
+      code = %Q{
+        begin
+          raise EOFError, 'file has ended'
+        rescue => e
+          UnionStationHooks.log_exception(e)
+        end
+      }
+      execute(code)
+    end
   end
 end
 
