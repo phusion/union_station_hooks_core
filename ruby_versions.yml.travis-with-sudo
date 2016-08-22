@@ -13,4 +13,4 @@
 - name: Ruby 2.1.5
   command: rvm-exec ruby-2.1.5 ruby
 - name: Ruby 2.2.0
-  command: rvm-exec ruby-2.2.0 ruby
+  command: rvm-exec ruby-2.2.5 ruby

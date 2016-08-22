@@ -13,6 +13,6 @@
 - name: Ruby 2.1.5
   command: rvm-exec ruby-2.1.5 ruby
 - name: Ruby 2.2.0
-  command: rvm-exec ruby-2.2.0 ruby
+  command: rvm-exec ruby-2.2.5 ruby
 - name: JRuby 9.0.0.0
   command: env JRUBY_OPTS= rvm-exec jruby-9.0.0.0.pre1 ruby --dev -J-XX:+TieredCompilation -J-XX:TieredStopAtLevel=1 -J-Xss2m -Xcompile.invokedynamic=false
