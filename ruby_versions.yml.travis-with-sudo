@@ -10,10 +10,10 @@
 # example below, this is the case for Ruby 1.9.3.
 
 - name: Ruby 1.8.7
-  command: rvm-exec ruby-1.8.7-p374 ruby
+  command: rvm-exec ruby-1.8.7 ruby
 - name: Ruby 1.9.3
   command: rvm-exec ruby-1.9.3-p551 bundle exec ruby
-- name: Ruby 2.1.5
-  command: rvm-exec ruby-2.1.5 ruby
+- name: Ruby 2.1
+  command: rvm-exec ruby-2.1 ruby
 - name: Ruby 2.2.5
   command: rvm-exec ruby-2.2.5 ruby
