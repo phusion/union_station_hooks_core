@@ -82,6 +82,12 @@ module UnionStationHooks
       reporter.log_gc_stats_on_request_begin
       reporter
     end
+    
+    # Returns the reporter for the current request or `nil` if it has not
+    # been initialized yet.
+    def reporter
+      Thread.current[:union_station_hooks]
+    end
 
     # @note You do not have to call this! Passenger automatically calls
     #   this for you!
