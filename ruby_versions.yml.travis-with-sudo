@@ -14,5 +14,5 @@
   command: rvm-exec ruby-1.9.3-p551 bundle exec ruby
 - name: Ruby 2.1.10
   command: rvm-exec ruby-2.1.10 ruby
-- name: Ruby 2.2.5
-  command: rvm-exec ruby-2.2.5 ruby
+- name: Ruby 2.2.6
+  command: rvm-exec ruby-2.2.6 ruby
